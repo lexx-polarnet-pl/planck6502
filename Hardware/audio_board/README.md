@@ -8,9 +8,9 @@ It is a major modification of the original Planck sound card, which was based so
 
 ## Revision History
 
-| Version | Date | Author | Status | Changes |
-| :---: | :---: | :--- | :---: | :--- |
-| **1.0** | 2026-09-25 | Lexx | Tested and working | Initial release |
+| Version | Status | Changes |
+| :---: | :---: | :--- |
+| **1.0** | Tested and working | Initial release |
 
 **This version is tested and working.**
 
@@ -18,6 +18,7 @@ This card integrates two sound chips on a single board. The first is the TLC7226
 
 The memory mapping for this card is as follows:
 
+```asm
 DAC_RIGHT_1 = SOUND_CARD_PORT + 0
 DAC_LEFT_1  = SOUND_CARD_PORT + 1
 DAC_LEFT_2  = SOUND_CARD_PORT + 2
@@ -25,3 +26,4 @@ DAC_RIGHT_2 = SOUND_CARD_PORT + 3
 
 OPL_ADDR = SOUND_CARD_PORT + 8
 OPL_DATA = SOUND_CARD_PORT + 9
+```
