@@ -1,45 +1,24 @@
-## Planck 6502 RAM board
+## Planck 6502 Keyboard and Mouse Interface
 
-![Ram boad 1.0 assembled](pictures/ram_board_1.0.jpg)
+![Keyboard and mouse interface with add-on 1.0 assembled](pictures/keyboard_mouse_board_1.0.jpg)
 
-This is a banked RAM board for the Planck 6502 computer (AS6C4008-55PCN version).
+This is the keyboard and mouse interface card for the Planck 6502 computer.
 
-The original project used the IS61C5128AL-10TLI, which was hard for me to obtain and was an SMD version. The AS6 is THT, so the soldering process should be much easier.
+This is an entirely new build, not based on any existing board from the original Planck project.
 
 ## Revision History
 
-| Version | Date | Author | Status | Changes |
-| :---: | :---: | :--- | :---: | :--- |
-| **1.0** | 2026-07-04 | Lexx | Partially working | Forked from original banked RAM project, replacing IS6 with AS6 |
+| Version | Status | Changes |
+| :---: | :---: | :--- |
+| **1.1** | Work in progress | RDY latch corrected, CS signal routed to ATmega |
+| **1.0** | Not working | Initial design |
 
-**This version doesn't work correctly.**
+**This board is a work in progress. Revision 1.0 requires the hardware modification shown in the picture to function.**
 
-The address decoder in this version is used only for OE; therefore, the card works properly in READ mode. However, it is not used to control WE signals. As a result, if the CPU wants to write a value into a memory area that should be out of range for this card (e.g., $0080), the value will be stored both in main RAM (at $0080) and in banked RAM (at $8080).
+This card was designed to act as an abstraction layer between a keyboard/mouse and the W65C02 CPU. It uses an ATmega328P microcontroller to handle all the signal translation. From the CPU's perspective, the entire card is accessible within a 16-byte memory block, and all communication is handled simply by reading from or writing to memory.
 
-How it should work:
+Because the ATmega may be too slow to respond directly to the CPU (which is the case when running the Planck at 12 MHz against the ATmega at 8 MHz), the card includes 74-series logic circuitry. This logic pulls the RDY line low immediately when the SLOT_SEL signal is detected, effectively pausing the CPU. Once the ATmega finishes processing the request and the data is ready, it generates a strobe signal (RDY_STROBE) to release the latch, allowing the CPU to resume execution. Note that due to this design, the card may not work with an original 6502 CPU, which handles the RDY line differently. However, since the Planck uses the W65C02, it works reliably.
 
-When active, it gives access to a bank or RAM in the $8000-$BFFF address space.
+The board is equipped with two PS/2 ports for connecting a keyboard and mouse, as well as a DS1307+ RTC chip with a CR2032 battery holder to provide real-time clock functionality. It also features an ISP header to flash the ATmega without removing it from the socket. Since the ISP lines are shared with the PS/2 ports, any connected PS/2 devices must be unplugged during flashing to avoid failure.
 
-To activate, store a byte with it's high bit set to the first register of the slot where it is placed.
-
-For example 
-lda #$80
-sta $FFD0
-will activate bank 0
-
-There are 32 banks. You can choose which one is active by setting the first 5 bits of the data when storing to the first register. There is no way to get the currently active bank.
-
-When the RAM card is active, it will respond to requests in the $8000 to $BFFF range instead of the ROM
-
-lda #$8E
-sta $FFD0
-will activate the 14th bank
-
-Setting the high bit to 0 will deactivate the banked RAM
-
-For example the following code will deactivate the banked RAM and restore the ROM :
-
-lda #0
-sta $FFD0
-
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This documentation is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+For operational details, memory mapping, and documentation, please refer to the firmware folder for this card.
