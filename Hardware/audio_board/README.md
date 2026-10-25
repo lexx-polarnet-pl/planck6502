@@ -16,6 +16,8 @@ It is a major modification of the original Planck sound card, which was based so
 
 This card integrates two sound chips on a single board. The first is the TLC7226CN, a 4-channel, 8-bit DAC (Digital-to-Analog Converter) that enables the Planck to play 8-bit samples. The four independent audio channels are paired into left and right channel outputs, allowing for true stereo sound playback. The second chip is the Yamaha YM3812 (OPL2), which handles FM-based synthesis. This chip was famously used in the AdLib and early Sound Blaster sound cards.
 
+See an [example of the card's capabilities](https://youtube.com/shorts/hnlIDgAt0dc?si=HoMWPFpHYaL4QCAE).
+
 The memory mapping for this card is as follows:
 
 ```asm
