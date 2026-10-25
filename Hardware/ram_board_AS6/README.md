@@ -9,7 +9,7 @@ The original project used the IS61C5128AL-10TLI, which was hard for me to obtain
 ## Revision History
 
 | Version | Status | Changes |
-| :---: | :---: | :--- | :---: | :--- |
+| :---: | :---: | :--- |
 | **1.0** | Partially working | Forked from original banked RAM project, replacing IS6 with AS6 |
 
 **This version doesn't work correctly.**
