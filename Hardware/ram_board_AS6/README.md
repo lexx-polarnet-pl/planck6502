@@ -1,5 +1,7 @@
 ## Planck 6502 RAM board
 
+![Ram boad 1.0 assembled](pictures/ram_board_1.0.jpg)
+
 This is a banked RAM board for the Planck 6502 computer (AS6C4008-55PCN version).
 
 The original project used the IS61C5128AL-10TLI, which was hard for me to obtain and was an SMD version. The AS6 is THT, so the soldering process should be much easier.
