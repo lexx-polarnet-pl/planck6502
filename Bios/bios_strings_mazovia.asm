@@ -3,7 +3,7 @@
 ; ==============================================================================
 
 welcome_banner: 
-	.byte 	"\x1B[0m\x1B[2J\x1B[HThe \x1B[31mW\x1B[32m6\x1B[33m5\x1B[35mC\x1B[0m (Planck/Lexx Edition) simple bios v0.4 (build 2610251855)\r\n"
+	.byte 	"\x1B[0m\x1B[2J\x1B[HThe \x1B[31mW\x1B[32m6\x1B[33m5\x1B[35mC\x1B[0m (Planck/Lexx Edition) simple bios v0.4 (build 2610261857)\r\n"
 	.asciiz	"Czeûç, jak sië masz?\r\n"
 
 ; ==============================================================================

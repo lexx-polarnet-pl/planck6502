@@ -227,6 +227,8 @@ bios_get_param_buffer:
 	jmp get_param_buffer
 bios_cf_load:
 	jmp cf_load
+bios_bell:
+	jmp opl_error_gong
 
 ret_from_irq:
 	rti
