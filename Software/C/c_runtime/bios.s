@@ -1,3 +1,4 @@
+.include "bios_api.inc"
 .export _print_char
 .export _print_str
 .export _getch
@@ -5,7 +6,8 @@
 .export _bcolor
 .export _clrscr
 .export _bell
-.include "bios_api.inc"
+.export initmainargs
+.export bios_get_param_buffer
 
 .segment "CODE"
 
@@ -36,3 +38,7 @@ _clrscr:
 		
 _bell:
 		jmp bios_bell
+		
+; Zamiast wykonywać cokolwiek, initmainargs po prostu wraca
+initmainargs:
+        rts		

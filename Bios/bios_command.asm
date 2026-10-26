@@ -545,7 +545,7 @@ PSTR_DONE:
 ; ==============================================================================
 ; BIOS API: GET_PARAM_BUFFER
 ; Zwraca adres bufora parametrów.
-; Wyjście: A = LSB adresu, X = MSB adresu
+; Wyjście: A = LSB adresu, Y = MSB adresu
 ; ==============================================================================
 get_param_buffer:
     lda #<parm_buffer   ; Pobierz młodszy bajt adresu ($C0)
