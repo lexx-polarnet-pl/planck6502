@@ -4,28 +4,11 @@
 
 #include "mouse.h"
 #include "output.h"
-
-#define PIN_PS2_MS_DATA   PB5
-#define PIN_PS2_MS_CLK    PB6
+#include "ps2.h"
 
 namespace
 {
-constexpr uint8_t MOUSE_ADDRESS_MASK =
-    _BV(PIN_PS2_MS_CLK) | _BV(PIN_PS2_MS_DATA);
-
 constexpr uint16_t PS2_TIMEOUT_MS = 50;
-
-
-// ============================================================================
-// BŁĘDY ODBIORU
-// ============================================================================
-enum class ReceiveError : uint8_t
-{
-    None,
-    ClockTimeout,
-    BadFrame,
-    BadParity
-};
 
 
 // ============================================================================
@@ -45,7 +28,7 @@ bool mouse_present = false;
 // ============================================================================
 // DEBUG / BŁĘDY
 // ============================================================================
-ReceiveError receive_error = ReceiveError::None;
+Ps2ReceiveError receive_error = Ps2ReceiveError::None;
 uint8_t receive_error_bit = 0;
 uint16_t receive_error_frame = 0;
 
@@ -65,50 +48,6 @@ uint32_t last_report_ms = 0;
 
 
 // ============================================================================
-// ZWOLNIENIE LINII PS/2
-//
-// PS/2 jest typu open collector/open drain.
-//
-// HIGH = zwolnienie linii
-// LOW  = aktywne ściągnięcie do GND
-// ============================================================================
-void release_line(uint8_t pin)
-{
-    PORTB |= _BV(pin);
-    DDRB &= ~_BV(pin);
-}
-
-
-// ============================================================================
-// ŚCIĄGNIĘCIE LINII DO LOW
-// ============================================================================
-void pull_line_low(uint8_t pin)
-{
-    PORTB &= ~_BV(pin);
-    DDRB |= _BV(pin);
-}
-
-
-// ============================================================================
-// OCZEKIWANIE NA POZIOM CLK
-// ============================================================================
-bool wait_clock_level(bool high,
-                      uint16_t timeout_ms = PS2_TIMEOUT_MS)
-{
-    const uint32_t start = millis();
-
-    while (((PINB & _BV(PIN_PS2_MS_CLK)) != 0) != high)
-    {
-        if (millis() - start >= timeout_ms)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// ============================================================================
 // ODBIÓR JEDNEJ RAMKI PS/2 DEVICE -> HOST
 //
 // Format:
@@ -120,108 +59,37 @@ bool wait_clock_level(bool high,
 bool receive_device_byte(uint8_t& value,
                          uint16_t timeout_ms = PS2_TIMEOUT_MS)
 {
-    value = 0;
+    Ps2ReceiveStatus status;
+    const bool success = ps2_receive_byte(
+        PIN_PS2_MS_CLK,
+        PIN_PS2_MS_DATA,
+        value,
+        timeout_ms,
+        Ps2TimeoutMode::Milliseconds,
+        true,
+        status
+    );
 
-    receive_error = ReceiveError::None;
-    receive_error_bit = 0;
-    receive_error_frame = 0;
-
-    uint8_t bits[11];
-
-    // ------------------------------------------------------------------------
-    // Synchronizacja z początkiem nowej ramki.
-    //
-    // Po zakończeniu transmisji host -> device CLK powinien być HIGH.
-    // Najpierw doprowadzamy się do tego stanu, a następnie czekamy na
-    // pierwsze falling edge nowej ramki.
-    // ------------------------------------------------------------------------
-
-    if (!wait_clock_level(true, timeout_ms))
+    switch (status.error)
     {
-        receive_error = ReceiveError::ClockTimeout;
-        receive_error_bit = 0;
-        return false;
+        case Ps2ReceiveError::ClockTimeout:
+            receive_error = Ps2ReceiveError::ClockTimeout;
+            break;
+        case Ps2ReceiveError::BadFrame:
+            receive_error = Ps2ReceiveError::BadFrame;
+            break;
+        case Ps2ReceiveError::BadParity:
+            receive_error = Ps2ReceiveError::BadParity;
+            break;
+        case Ps2ReceiveError::None:
+        default:
+            receive_error = Ps2ReceiveError::None;
+            break;
     }
 
-    // ------------------------------------------------------------------------
-    // Odbiór 11 bitów
-    // ------------------------------------------------------------------------
-
-    for (uint8_t i = 0; i < 11; ++i)
-    {
-        // Czekamy na falling edge.
-        if (!wait_clock_level(false, timeout_ms))
-        {
-            receive_error = ReceiveError::ClockTimeout;
-            receive_error_bit = i;
-            return false;
-        }
-
-        // DATA jest ważne na falling edge.
-        bits[i] =
-            (PINB & _BV(PIN_PS2_MS_DATA)) ? 1 : 0;
-
-        receive_error_frame |=
-            static_cast<uint16_t>(bits[i]) << i;
-
-        // Czekamy na koniec cyklu.
-        if (!wait_clock_level(true, timeout_ms))
-        {
-            receive_error = ReceiveError::ClockTimeout;
-            receive_error_bit = i;
-            return false;
-        }
-    }
-
-    // ------------------------------------------------------------------------
-    // START
-    // ------------------------------------------------------------------------
-
-    if (bits[0] != 0)
-    {
-        receive_error = ReceiveError::BadFrame;
-        receive_error_bit = 0;
-        return false;
-    }
-
-    // ------------------------------------------------------------------------
-    // STOP
-    // ------------------------------------------------------------------------
-
-    if (bits[10] != 1)
-    {
-        receive_error = ReceiveError::BadFrame;
-        receive_error_bit = 10;
-        return false;
-    }
-
-    // ------------------------------------------------------------------------
-    // DATA
-    // ------------------------------------------------------------------------
-
-    uint8_t parity = 0;
-
-    value = 0;
-
-    for (uint8_t i = 0; i < 8; ++i)
-    {
-        value |=
-            static_cast<uint8_t>(bits[i + 1] << i);
-
-        parity ^= bits[i + 1];
-    }
-
-    // ------------------------------------------------------------------------
-    // PARITY - odd parity
-    // ------------------------------------------------------------------------
-
-    if ((parity ^ bits[9]) != 1)
-    {
-        receive_error = ReceiveError::BadParity;
-        return false;
-    }
-
-    return true;
+    receive_error_bit = status.bit;
+    receive_error_frame = status.frame;
+    return success;
 }
 
 // ============================================================================
@@ -233,7 +101,7 @@ void format_receive_error(const char* stage,
 {
     switch (receive_error)
     {
-        case ReceiveError::ClockTimeout:
+        case Ps2ReceiveError::ClockTimeout:
 
             snprintf(
                 message,
@@ -249,7 +117,7 @@ void format_receive_error(const char* stage,
             break;
 
 
-        case ReceiveError::BadFrame:
+        case Ps2ReceiveError::BadFrame:
 
             snprintf(
                 message,
@@ -262,7 +130,7 @@ void format_receive_error(const char* stage,
             break;
 
 
-        case ReceiveError::BadParity:
+        case Ps2ReceiveError::BadParity:
 
             snprintf(
                 message,
@@ -275,7 +143,7 @@ void format_receive_error(const char* stage,
             break;
 
 
-        case ReceiveError::None:
+        case Ps2ReceiveError::None:
         default:
 
             snprintf(
@@ -290,99 +158,6 @@ void format_receive_error(const char* stage,
 }
 
 // ============================================================================
-// WYSYŁANIE JEDNEJ RAMKI HOST -> DEVICE
-// ============================================================================
-
-bool send_device_byte(uint8_t value)
-{
-    uint8_t parity = 1;
-
-    // ------------------------------------------------------------------------
-    // HOST REQUEST TO SEND
-    // ------------------------------------------------------------------------
-
-    pull_line_low(PIN_PS2_MS_CLK);
-    delayMicroseconds(120);
-
-    // START = 0
-    pull_line_low(PIN_PS2_MS_DATA);
-
-    // Zwolnij CLK.
-    release_line(PIN_PS2_MS_CLK);
-
-    // Pierwszy falling edge = START.
-    if (!wait_clock_level(false, PS2_TIMEOUT_MS))
-        return false;
-
-    if (!wait_clock_level(true, PS2_TIMEOUT_MS))
-        return false;
-
-    // ------------------------------------------------------------------------
-    // DATA
-    // ------------------------------------------------------------------------
-
-    for (uint8_t i = 0; i < 8; ++i)
-    {
-        const uint8_t bit = value & 0x01;
-
-        if (!wait_clock_level(false, PS2_TIMEOUT_MS))
-            return false;
-
-        if (bit)
-            release_line(PIN_PS2_MS_DATA);
-        else
-            pull_line_low(PIN_PS2_MS_DATA);
-
-        parity ^= bit;
-
-        if (!wait_clock_level(true, PS2_TIMEOUT_MS))
-            return false;
-
-        value >>= 1;
-    }
-
-    // ------------------------------------------------------------------------
-    // PARITY
-    // ------------------------------------------------------------------------
-
-    if (!wait_clock_level(false, PS2_TIMEOUT_MS))
-        return false;
-
-    if (parity)
-        release_line(PIN_PS2_MS_DATA);
-    else
-        pull_line_low(PIN_PS2_MS_DATA);
-
-    if (!wait_clock_level(true, PS2_TIMEOUT_MS))
-        return false;
-
-    // ------------------------------------------------------------------------
-    // STOP
-    // ------------------------------------------------------------------------
-
-    if (!wait_clock_level(false, PS2_TIMEOUT_MS))
-        return false;
-
-    release_line(PIN_PS2_MS_DATA);
-
-    if (!wait_clock_level(true, PS2_TIMEOUT_MS))
-        return false;
-
-    release_line(PIN_PS2_MS_DATA);
-
-    return true;
-}
-
-// ============================================================================
-// WYSŁANIE KOMENDY
-// ============================================================================
-bool send_command(uint8_t command)
-{
-    return send_device_byte(command);
-}
-
-
-// ============================================================================
 // RESET + SELF TEST + ID + ENABLE
 // ============================================================================
 bool send_reset_and_enable(const char*& error)
@@ -394,32 +169,12 @@ bool send_reset_and_enable(const char*& error)
     // =========================================================================
     // RESET = FF
     // =========================================================================
-    if (!send_device_byte(0xFF))
-    {
-        error = "MOUSE: reset transmit failed\r\n";
-        return false;
-    }
-
-    // =========================================================================
-    // ACK / RESEND
-    //
-    // Odpowiedź myszy jest pełną ramką PS/2:
-    //   FA = ACK
-    //   FE = RESEND
-    // =========================================================================
     for (uint8_t attempt = 0; attempt < 3; ++attempt)
     {
-        if (!receive_device_byte(response, 1000))
+        if (!ps2_send_byte(
+                PIN_PS2_MS_CLK, PIN_PS2_MS_DATA, 0xFF, response))
         {
-            static char msg[64];
-
-            format_receive_error(
-                "reset ACK",
-                msg,
-                sizeof(msg)
-            );
-
-            error = msg;
+            error = "MOUSE: reset transmit or ACK failed\r\n";
             return false;
         }
 
@@ -444,11 +199,6 @@ bool send_reset_and_enable(const char*& error)
         // RESEND - powtórz FF.
         delay(20);
 
-        if (!send_device_byte(0xFF))
-        {
-            error = "MOUSE: reset retry transmit failed\r\n";
-            return false;
-        }
     }
 
     if (response != 0xFA)
@@ -531,23 +281,10 @@ bool send_reset_and_enable(const char*& error)
     // =========================================================================
     for (uint8_t attempt = 0; ; ++attempt)
     {
-        if (!send_command(0xF4))
+        if (!ps2_send_byte(
+                PIN_PS2_MS_CLK, PIN_PS2_MS_DATA, 0xF4, response))
         {
-            error = "MOUSE: enable transmit failed\r\n";
-            return false;
-        }
-
-        if (!receive_device_byte(response))
-        {
-            static char receive_message[64];
-
-            format_receive_error(
-                "enable ACK",
-                receive_message,
-                sizeof(receive_message)
-            );
-
-            error = receive_message;
+            error = "MOUSE: enable transmit or ACK failed\r\n";
             return false;
         }
 
@@ -662,9 +399,8 @@ void mouse_init()
     // ------------------------------------------------------------------------
     // CLK + DATA jako wejścia z pull-up.
     // ------------------------------------------------------------------------
-    DDRB &= ~MOUSE_ADDRESS_MASK;
-
-    PORTB |= MOUSE_ADDRESS_MASK;
+    ps2_release_line(PIN_PS2_MS_CLK);
+    ps2_release_line(PIN_PS2_MS_DATA);
 
 
     // ------------------------------------------------------------------------
@@ -675,8 +411,8 @@ void mouse_init()
 
     if (!send_reset_and_enable(error))
     {
-        release_line(PIN_PS2_MS_CLK);
-        release_line(PIN_PS2_MS_DATA);
+        ps2_release_line(PIN_PS2_MS_CLK);
+        ps2_release_line(PIN_PS2_MS_DATA);
 
         show_error(error);
 

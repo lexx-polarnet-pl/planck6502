@@ -3,9 +3,7 @@
 #include "keyboard.h"
 #include "mouse.h"
 #include "output.h"
-#define PIN_PS2_KB_DATA   PB3
-#define PIN_PS2_KB_CLK    PB4
-#define PIN_PS2_MS_CLK    PB6
+#include "ps2.h"
 
 // ============================================================================
 // BUFOR KLAWIATURY & STANY PS/2
@@ -26,8 +24,6 @@ static volatile bool kbd_present = false;
 static volatile bool ps2_detecting_keyboard = false;
 static volatile bool ps2_keyboard_bat_passed = false;
 
-static volatile uint8_t ps2_bit_count = 0;
-static volatile uint8_t ps2_incoming_byte = 0;
 static volatile bool ps2_is_release = false;
 static volatile bool ps2_is_extended = false;
 static volatile uint8_t ps2_pause_bytes_remaining = 0;
@@ -91,124 +87,6 @@ static inline bool kbd_has_data()
 
 
 // ============================================================================
-// POMOCNICZE FUNKCJE PS/2
-// ============================================================================
-
-static bool ps2_wait_clock_low(uint32_t timeout)
-{
-    while ((PINB & _BV(PIN_PS2_KB_CLK)) && --timeout) {
-    }
-
-    return timeout > 0;
-}
-
-
-static bool ps2_wait_clock_high(uint32_t timeout)
-{
-    while (!(PINB & _BV(PIN_PS2_KB_CLK)) && --timeout) {
-    }
-
-    return timeout > 0;
-}
-
-
-// ============================================================================
-// ODBIÓR JEDNEJ RAMKI PS/2 - W TRYBIE SYNCHRONICZNYM
-//
-// Format:
-//
-// START  D0 D1 D2 D3 D4 D5 D6 D7 PARITY STOP
-//   0                                  1
-//
-// Wywoływane z wyłączonymi przerwaniami.
-// ============================================================================
-static bool ps2_receive_byte_blocking(uint8_t *result)
-{
-    uint8_t data = 0;
-    uint8_t parity = 0;
-
-    // Czekamy na początek ramki - opadające CLK.
-    if (!ps2_wait_clock_low(10000)) {
-        return false;
-    }
-
-    // Bit START
-    uint8_t bit = (PINB & _BV(PIN_PS2_KB_DATA)) ? 1 : 0;
-
-    if (bit != 0) {
-        return false;
-    }
-
-    if (!ps2_wait_clock_high(10000)) {
-        return false;
-    }
-
-
-    // 8 bitów danych
-    for (uint8_t i = 0; i < 8; i++) {
-
-        if (!ps2_wait_clock_low(10000)) {
-            return false;
-        }
-
-        bit = (PINB & _BV(PIN_PS2_KB_DATA)) ? 1 : 0;
-
-        if (bit) {
-            data |= _BV(i);
-            parity ^= 1;
-        }
-
-        if (!ps2_wait_clock_high(10000)) {
-            return false;
-        }
-    }
-
-
-    // Bit PARITY
-    if (!ps2_wait_clock_low(10000)) {
-        return false;
-    }
-
-    bit = (PINB & _BV(PIN_PS2_KB_DATA)) ? 1 : 0;
-
-    if (bit) {
-        parity ^= 1;
-    }
-
-    // PS/2 używa nieparzystej parzystości.
-    // Po uwzględnieniu bitu parity liczba jedynek
-    // musi być nieparzysta.
-    if (parity != 1) {
-        return false;
-    }
-
-    if (!ps2_wait_clock_high(10000)) {
-        return false;
-    }
-
-
-    // Bit STOP
-    if (!ps2_wait_clock_low(10000)) {
-        return false;
-    }
-
-    bit = (PINB & _BV(PIN_PS2_KB_DATA)) ? 1 : 0;
-
-    if (bit != 1) {
-        return false;
-    }
-
-    if (!ps2_wait_clock_high(10000)) {
-        return false;
-    }
-
-    *result = data;
-
-    return true;
-}
-
-
-// ============================================================================
 // NISKOPOZIOMOWE WYSYŁANIE KOMEND PS/2
 // HOST -> DEVICE
 //
@@ -220,204 +98,36 @@ static bool ps2_receive_byte_blocking(uint8_t *result)
 //
 // Dzięki temu ACK NIE trafia do ISR jako scancode.
 // ============================================================================
-static bool ps2_send_byte(uint8_t pin_clk, uint8_t pin_data, uint8_t data)
+static bool keyboard_send_byte(uint8_t pin_clk, uint8_t pin_data, uint8_t data)
 {
-    uint8_t parity = 1;
-    uint8_t received;
+    uint8_t response = 0;
+    bool acknowledged = false;
 
-    // Zapamiętujemy stan SREG.
-    uint8_t saved_sreg = SREG;
+    for (uint8_t attempt = 0; attempt < 3; ++attempt)
+    {
+        ps2_is_release = false;
+        ps2_is_extended = false;
 
-    cli();
-
-    // ------------------------------------------------------------------------
-    // Wyłączamy PCINT dla portu B.
-    //
-    // Podczas transmisji host -> keyboard ISR nie powinien próbować
-    // dekodować zegara tej transmisji jako normalnego scancode.
-    // ------------------------------------------------------------------------
-    PCICR &= ~_BV(PCIE0);
-
-    // Czyścimy ewentualną oczekującą flagę PCINT.
-    PCIFR |= _BV(PCIF0);
-
-    // Resetujemy odbiornik PS/2.
-    ps2_bit_count = 0;
-    ps2_incoming_byte = 0;
-
-
-    // ------------------------------------------------------------------------
-    // HOST REQUEST
-    //
-    // CLK LOW przez minimum 100 us.
-    // ------------------------------------------------------------------------
-    DDRB |= _BV(pin_clk);
-    PORTB &= ~_BV(pin_clk);
-
-    delayMicroseconds(120);
-
-
-    // ------------------------------------------------------------------------
-    // START BIT
-    //
-    // DATA LOW.
-    // ------------------------------------------------------------------------
-    DDRB |= _BV(pin_data);
-    PORTB &= ~_BV(pin_data);
-
-
-    // ------------------------------------------------------------------------
-    // Zwalniamy CLK.
-    //
-    // Klawiatura od tego momentu generuje zegar.
-    // ------------------------------------------------------------------------
-    DDRB &= ~_BV(pin_clk);
-    PORTB |= _BV(pin_clk);
-
-
-    // ------------------------------------------------------------------------
-    // RAMKA:
-    //
-    // START
-    // D0
-    // D1
-    // D2
-    // D3
-    // D4
-    // D5
-    // D6
-    // D7
-    // PARITY
-    // STOP
-    //
-    // START jest już ustawiony przed zwolnieniem CLK.
-    // Po każdym falling edge ustawiamy DATA dla kolejnego bitu,
-    // podczas gdy CLK jest HIGH.
-    // ------------------------------------------------------------------------
-
-    for (uint8_t frame_pos = 0; frame_pos < 11; frame_pos++) {
-
-        // Czekamy na opadające zbocze CLK.
-        // To zbocze zatwierdza aktualny bit.
-        if (!ps2_wait_clock_low(10000)) {
-            goto ps2_send_error;
-        }
-
-
-        // Po ostatnim bicie nie przygotowujemy już następnego bitu.
-        if (frame_pos == 10) {
+        if (!ps2_send_byte(pin_clk, pin_data, data, response))
+        {
             break;
         }
 
-
-        // Czekamy aż CLK wróci HIGH.
-        if (!ps2_wait_clock_high(10000)) {
-            goto ps2_send_error;
+        if (response == 0xFA)
+        {
+            acknowledged = true;
+            break;
         }
 
-
-        // ------------------------------------------------------------
-        // Przygotowanie kolejnego bitu
-        // ------------------------------------------------------------
-
-        if (frame_pos < 8) {
-
-            // frame_pos = 0 -> D0
-            // frame_pos = 1 -> D1
-            // ...
-            // frame_pos = 7 -> D7
-
-            uint8_t bit = (data >> frame_pos) & 0x01;
-
-            if (bit) {
-                PORTB |= _BV(pin_data);
-                parity ^= 1;
-            }
-            else {
-                PORTB &= ~_BV(pin_data);
-            }
-        }
-        else if (frame_pos == 8) {
-
-            // PARITY
-
-            if (parity) {
-                PORTB |= _BV(pin_data);
-            }
-            else {
-                PORTB &= ~_BV(pin_data);
-            }
-        }
-        else if (frame_pos == 9) {
-
-            // STOP = HIGH
-
-            PORTB |= _BV(pin_data);
+        if (response != 0xFE)
+        {
+            break;
         }
     }
 
-
-    // ------------------------------------------------------------------------
-    // STOP został odebrany przez klawiaturę.
-    //
-    // Czekamy na HIGH CLK, a następnie zwalniamy DATA.
-    // ------------------------------------------------------------------------
-    if (!ps2_wait_clock_high(10000)) {
-        goto ps2_send_error;
-    }
-
-    DDRB &= ~_BV(pin_data);
-    PORTB |= _BV(pin_data);
-
-
-    // ------------------------------------------------------------------------
-    // TERAZ KLawiatura powinna rozpocząć ACK.
-    //
-    // Odbieramy synchronicznie całą ramkę.
-    // ------------------------------------------------------------------------
-    if (!ps2_receive_byte_blocking(&received)) {
-        goto ps2_send_error;
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Ponownie włączamy PCINT.
-    // ------------------------------------------------------------------------
-    ps2_bit_count = 0;
-    ps2_incoming_byte = 0;
     ps2_is_release = false;
     ps2_is_extended = false;
-
-    PCIFR |= _BV(PCIF0);
-    PCICR |= _BV(PCIE0);
-
-    SREG = saved_sreg;
-
-
-    // ACK klawiatury = 0xFA
-    return (received == 0xFA);
-
-
-ps2_send_error:
-
-    // W przypadku błędu również zwalniamy magistralę.
-    DDRB &= ~_BV(pin_data);
-    PORTB |= _BV(pin_data);
-
-    DDRB &= ~_BV(pin_clk);
-    PORTB |= _BV(pin_clk);
-
-    ps2_bit_count = 0;
-    ps2_incoming_byte = 0;
-    ps2_is_release = false;
-    ps2_is_extended = false;
-
-    PCIFR |= _BV(PCIF0);
-    PCICR |= _BV(PCIE0);
-
-    SREG = saved_sreg;
-
-    return false;
+    return acknowledged;
 }
 
 
@@ -430,13 +140,13 @@ ps2_send_error:
 // ============================================================================
 static bool ps2_update_keyboard_leds(uint8_t leds)
 {
-    if (!ps2_send_byte(PIN_PS2_KB_CLK, PIN_PS2_KB_DATA, 0xED)) {
+    if (!keyboard_send_byte(PIN_PS2_KB_CLK, PIN_PS2_KB_DATA, 0xED)) {
         return false;
     }
 
     delay(20);
 
-    return ps2_send_byte(
+    return keyboard_send_byte(
         PIN_PS2_KB_CLK,
         PIN_PS2_KB_DATA,
         leds & 0x07
@@ -459,7 +169,7 @@ static void ps2_kb_init_and_detect()
     //
     // Następnie klawiatura powinna wysłać BAT = AA.
     //
-    if (ps2_send_byte(PIN_PS2_KB_CLK, PIN_PS2_KB_DATA, 0xFF)) {
+    if (keyboard_send_byte(PIN_PS2_KB_CLK, PIN_PS2_KB_DATA, 0xFF)) {
 
         uint32_t start_time = millis();
 
@@ -583,7 +293,7 @@ static uint8_t map_extended_key(uint8_t code)
     return 0;
 }
 
-static void process_ps2_scancode(uint8_t code)
+void keyboard_process_ps2_scancode(uint8_t code)
 {
     // ------------------------------------------------------------------------
     // DETEKCJA BAT
@@ -763,95 +473,13 @@ static void process_ps2_scancode(uint8_t code)
 
 
 // ============================================================================
-// ISR PS/2 + MOUSE
-// ============================================================================
-ISR(PCINT0_vect)
-{
-    static uint8_t last_pins =
-        _BV(PIN_PS2_KB_CLK) | _BV(PIN_PS2_MS_CLK);
-
-    const uint8_t current_pins = PINB;
-
-
-    // =========================================================================
-    // KLAWIATURA - FALLING EDGE CLK
-    // =========================================================================
-    if ((last_pins & _BV(PIN_PS2_KB_CLK))
-        && !(current_pins & _BV(PIN_PS2_KB_CLK))) {
-
-        uint8_t data_bit =
-            (PINB & _BV(PIN_PS2_KB_DATA)) ? 1 : 0;
-
-
-        // ---------------------------------------------------------------------
-        // Odbieramy bity D0..D7.
-        //
-        // Bit START jest pomijany.
-        // ---------------------------------------------------------------------
-        if (ps2_bit_count >= 1 &&
-            ps2_bit_count <= 8) {
-
-            ps2_incoming_byte >>= 1;
-
-            if (data_bit) {
-                ps2_incoming_byte |= 0x80;
-            }
-        }
-
-
-        ps2_bit_count++;
-
-
-        // ---------------------------------------------------------------------
-        // 11 bitów:
-        //
-        // 0 = START
-        // 1..8 = DATA
-        // 9 = PARITY
-        // 10 = STOP
-        // ---------------------------------------------------------------------
-        if (ps2_bit_count == 11) {
-
-            process_ps2_scancode(ps2_incoming_byte);
-
-            ps2_bit_count = 0;
-            ps2_incoming_byte = 0;
-        }
-    }
-
-
-    // =========================================================================
-    // MOUSE - RISING EDGE
-    // =========================================================================
-    if (!(last_pins & _BV(PIN_PS2_MS_CLK))
-        && (current_pins & _BV(PIN_PS2_MS_CLK))) {
-
-        mouse_on_clock_rising();
-    }
-    // =========================================================================
-    // MOUSE - FALLING EDGE
-    // =========================================================================
-    if ((last_pins & _BV(PIN_PS2_MS_CLK))
-        && !(current_pins & _BV(PIN_PS2_MS_CLK))) {
-
-        mouse_on_clock_falling();
-    }
-
-    last_pins = current_pins;
-}
-
-
-// ============================================================================
 // INIT
 // ============================================================================
 void keyboard_init()
 {
     // PS/2 CLK + DATA jako wejścia z pull-up
-    DDRB &= ~(_BV(PIN_PS2_KB_CLK) |
-              _BV(PIN_PS2_KB_DATA));
-
-    PORTB |= _BV(PIN_PS2_KB_CLK) |
-             _BV(PIN_PS2_KB_DATA);
+    ps2_release_line(PIN_PS2_KB_CLK);
+    ps2_release_line(PIN_PS2_KB_DATA);
 
 
     // ------------------------------------------------------------------------
@@ -859,7 +487,7 @@ void keyboard_init()
     // ------------------------------------------------------------------------
     PCICR |= _BV(PCIE0);
 
-    // Keyboard clock is PB6 = PCINT6.
+    // Keyboard clock is PB4 = PCINT4.
     PCMSK0 |= _BV(PIN_PS2_KB_CLK);
 
 
