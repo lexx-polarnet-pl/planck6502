@@ -13,7 +13,7 @@ This is an entirely new build, not based on any existing board from the original
 | **1.1** | Work in progress | RDY latch corrected, CS signal routed to ATmega |
 | **1.0** | Not working | Initial design |
 
-** Version 1.0 doesn't work correctly, version 1.1 was not tested yet **
+**Version 1.0 doesn't work correctly, version 1.1 was not tested yet**
 
 This card was designed to act as an abstraction layer between a keyboard/mouse and the W65C02 CPU. It uses an ATmega328P microcontroller to handle all the signal translation. From the CPU's perspective, the entire card is accessible within a 16-byte memory block, and all communication is handled simply by reading from or writing to memory.
 
