@@ -751,7 +751,7 @@
     ]
   ],
   "text_variables": {
-    "VERSION": "v1.0"
+    "VERSION": "v1.1"
   },
   "tuning_profiles": {
     "meta": {
