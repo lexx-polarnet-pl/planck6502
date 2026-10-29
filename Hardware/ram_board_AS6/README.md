@@ -10,9 +10,10 @@ The original project used the IS61C5128AL-10TLI, which was hard for me to obtain
 
 | Version | Status | Changes |
 | :---: | :---: | :--- |
+| **1.1** | Work in progress | WE signal is now active only when CPU operates in RAM expansion card window |
 | **1.0** | Partially working | Forked from original banked RAM project, replacing IS6 with AS6 |
 
-**This version doesn't work correctly.**
+** Version 1.0 doesn't work correctly, version 1.1 was not tested yet **
 
 The address decoder in this version is used only for OE; therefore, the card works properly in READ mode. However, it is not used to control WE signals. As a result, if the CPU wants to write a value into a memory area that should be out of range for this card (e.g., $0080), the value will be stored both in main RAM (at $0080) and in banked RAM (at $8080).
 
