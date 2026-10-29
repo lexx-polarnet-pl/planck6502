@@ -1,6 +1,6 @@
-## Planck 6502 RAM board
+## Planck 6502 AS6 RAM board
 
-![Ram boad 1.0 assembled](pictures/ram_board_1.0.jpg)
+![AS6 Ram boad 1.0 assembled](pictures/ram_board_1.0.jpg)
 
 This is a banked RAM board for the Planck 6502 computer (AS6C4008-55PCN version).
 
