@@ -5,10 +5,10 @@
 	(uuid "e2bcf69d-c4bd-4df2-83f6-821a82368f7e")
 	(paper "A4")
 	(title_block
-		(title "RAM Board")
-		(date "2023-02-27")
+		(title "AS6 RAM Board")
+		(date "2026-10-29")
 		(rev "${VERSION}")
-		(company "Six Pixels")
+		(company "Lexx")
 	)
 	(lib_symbols
 		(symbol "74xx:74HC02"
@@ -5816,7 +5816,7 @@
 	)
 	(text "Inhibit ROM when RAM chip is active"
 		(exclude_from_sim no)
-		(at 179.07 152.4 0)
+		(at 210.82 136.144 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5825,20 +5825,20 @@
 		)
 		(uuid "4ca4fc7a-5623-48e0-96e5-afd376db3861")
 	)
-	(text "This is wrong"
+	(text "\n"
 		(exclude_from_sim no)
-		(at 123.19 189.23 0)
+		(at 92.202 195.834 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "916251aa-b6b1-475b-b8b8-e6ce98acda41")
+		(uuid "50ae289c-1ff5-4280-8dcf-2ca7dfe053f5")
 	)
 	(text "RAM in use in window from $8000 to $BFFF"
 		(exclude_from_sim no)
-		(at 113.03 78.74 0)
+		(at 82.296 76.454 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5849,7 +5849,7 @@
 	)
 	(text "Buffer latches data when SLOT_SEL is \nactive (low) and clock goes low"
 		(exclude_from_sim no)
-		(at 93.98 165.1 0)
+		(at 93.218 165.1 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5858,9 +5858,9 @@
 		)
 		(uuid "f026dcc3-b37d-4b97-8159-c80ef0d3ea62")
 	)
-	(text "Setting bit 7 high causes RAM chip to activate"
+	(text "Setting bit 7 high causes RAM chip to activate for READ\nWRITE to RAM is always possible"
 		(exclude_from_sim no)
-		(at 172.72 161.29 0)
+		(at 175.26 162.56 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -5894,18 +5894,6 @@
 		(uuid "2c2e7573-8dc6-414c-915a-fcb1f6fb56f4")
 	)
 	(junction
-		(at 35.56 148.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "451d335f-c1f5-4d0f-97ec-6bbc6305d2e8")
-	)
-	(junction
-		(at 35.56 153.67)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "4ca22ecf-9bf1-415b-aa75-261c10369f6b")
-	)
-	(junction
 		(at 63.5 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5936,12 +5924,6 @@
 		(uuid "8cbde91b-491f-4de4-8205-bdcb23034fe4")
 	)
 	(junction
-		(at 59.69 170.18)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "8e021caf-2c6d-4594-8f6a-e9b9f6e55861")
-	)
-	(junction
 		(at 148.59 38.1)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5958,6 +5940,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "93eeda80-f42c-4e1f-9183-4bbf74cab914")
+	)
+	(junction
+		(at 35.56 149.86)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "95ed212c-6fc5-4fa7-8f27-aca80d225e7e")
 	)
 	(junction
 		(at 139.7 36.83)
@@ -6008,6 +5996,12 @@
 		(uuid "ba2a7751-2168-40ba-8094-4213843a391a")
 	)
 	(junction
+		(at 118.11 90.17)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d59b2839-7d92-4b7b-9525-e07d7807130c")
+	)
+	(junction
 		(at 170.18 157.48)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -6024,6 +6018,30 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ec9cf008-857c-4a73-b069-0839c0b710d3")
+	)
+	(no_connect
+		(at 50.8 172.72)
+		(uuid "1c7e2404-48a6-43b4-92cf-ae34c0fa987c")
+	)
+	(no_connect
+		(at 163.83 167.64)
+		(uuid "2020ea9f-42ae-4e40-a851-0c3065128a7c")
+	)
+	(no_connect
+		(at 50.8 149.86)
+		(uuid "5d1a7079-0db8-4ac1-922a-9e1d2a54379b")
+	)
+	(no_connect
+		(at 50.8 137.16)
+		(uuid "a12bf930-b32c-45e5-935d-248e60e7270a")
+	)
+	(no_connect
+		(at 50.8 160.02)
+		(uuid "cb37efe7-a474-4d35-b9ca-84f2d39925c3")
+	)
+	(no_connect
+		(at 163.83 165.1)
+		(uuid "e0ec7616-a3c5-4bcc-bcfe-1345ad6a1718")
 	)
 	(wire
 		(pts
@@ -6047,7 +6065,7 @@
 	)
 	(wire
 		(pts
-			(xy 134.62 88.9) (xy 137.16 88.9)
+			(xy 100.33 87.63) (xy 102.87 87.63)
 		)
 		(stroke
 			(width 0)
@@ -6077,16 +6095,6 @@
 	)
 	(wire
 		(pts
-			(xy 59.69 170.18) (xy 59.69 177.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "109560d2-b3b8-4459-bf4e-82267434bbdc")
-	)
-	(wire
-		(pts
 			(xy 170.18 146.05) (xy 173.99 146.05)
 		)
 		(stroke
@@ -6104,6 +6112,16 @@
 			(type default)
 		)
 		(uuid "1cf98227-1d4c-4db9-9af5-30e48d20ad57")
+	)
+	(wire
+		(pts
+			(xy 135.89 120.65) (xy 140.97 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1d8645e4-3b72-41af-8e7c-cd5f000cf041")
 	)
 	(wire
 		(pts
@@ -6167,6 +6185,16 @@
 	)
 	(wire
 		(pts
+			(xy 156.21 120.65) (xy 231.14 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "30135793-6346-4e43-bd9b-bb2099d68905")
+	)
+	(wire
+		(pts
 			(xy 143.51 31.75) (xy 143.51 30.48)
 		)
 		(stroke
@@ -6187,7 +6215,7 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 91.44) (xy 160.02 91.44)
+			(xy 118.11 90.17) (xy 160.02 90.17)
 		)
 		(stroke
 			(width 0)
@@ -6357,23 +6385,13 @@
 	)
 	(wire
 		(pts
-			(xy 158.75 120.65) (xy 231.14 120.65)
+			(xy 115.57 123.19) (xy 120.65 123.19)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "6426f6ae-2cfb-43bf-81fa-824f353dcc20")
-	)
-	(wire
-		(pts
-			(xy 59.69 161.29) (xy 59.69 170.18)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "670395ae-d38d-4324-8bbf-3928012f1010")
+		(uuid "61fd4edd-5b7a-48fb-8f02-f9d0e59da820")
 	)
 	(wire
 		(pts
@@ -6464,6 +6482,16 @@
 			(type default)
 		)
 		(uuid "782219e0-8a80-4451-8633-73fe1d039ae7")
+	)
+	(wire
+		(pts
+			(xy 35.56 149.86) (xy 35.56 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78632210-f78c-4402-911d-7e174aaf8387")
 	)
 	(wire
 		(pts
@@ -6567,6 +6595,16 @@
 	)
 	(wire
 		(pts
+			(xy 120.65 118.11) (xy 118.11 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "871f4d48-093a-4c93-afad-d64f3cb504d5")
+	)
+	(wire
+		(pts
 			(xy 231.14 120.65) (xy 231.14 90.17)
 		)
 		(stroke
@@ -6604,16 +6642,6 @@
 			(type default)
 		)
 		(uuid "96cc1d06-7f98-4c6b-a35a-225a9e1a92e0")
-	)
-	(wire
-		(pts
-			(xy 35.56 148.59) (xy 35.56 153.67)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9c8f025a-e1c8-4b2e-9c0d-c9ca979283ed")
 	)
 	(wire
 		(pts
@@ -6767,7 +6795,7 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 91.44) (xy 160.02 118.11)
+			(xy 160.02 90.17) (xy 160.02 118.11)
 		)
 		(stroke
 			(width 0)
@@ -6787,23 +6815,13 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 153.67) (xy 35.56 157.48)
+			(xy 35.56 139.7) (xy 35.56 149.86)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "c3c5ff2c-ea94-497f-acfc-af6121154620")
-	)
-	(wire
-		(pts
-			(xy 35.56 139.7) (xy 35.56 148.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c4482056-bc0f-4918-bc5a-e214da5c6cea")
 	)
 	(wire
 		(pts
@@ -6877,7 +6895,7 @@
 	)
 	(wire
 		(pts
-			(xy 143.51 123.19) (xy 140.97 123.19)
+			(xy 100.33 125.73) (xy 97.79 125.73)
 		)
 		(stroke
 			(width 0)
@@ -7007,6 +7025,16 @@
 	)
 	(wire
 		(pts
+			(xy 118.11 118.11) (xy 118.11 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fa93ee4a-966b-4cab-b522-3944bc43a0de")
+	)
+	(wire
+		(pts
 			(xy 194.31 87.63) (xy 198.12 87.63)
 		)
 		(stroke
@@ -7076,7 +7104,7 @@
 		(uuid "7e2d9b06-5a15-4b32-b0af-6087a23c5296")
 	)
 	(label "~{WE}"
-		(at 176.53 120.65 0)
+		(at 156.21 120.65 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7453,7 +7481,7 @@
 	)
 	(global_label "R~{W}"
 		(shape input)
-		(at 128.27 118.11 180)
+		(at 85.09 120.65 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -7463,7 +7491,7 @@
 		)
 		(uuid "2e30f9d1-a0fd-4a2b-abec-b6751b935fa7")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 0 11.43 0)
+			(at -43.18 13.97 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8267,7 +8295,7 @@
 	)
 	(global_label "CLK"
 		(shape input)
-		(at 140.97 123.19 180)
+		(at 97.79 125.73 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -8277,7 +8305,7 @@
 		)
 		(uuid "90eda4d9-b9ec-4f7e-95ab-800cd6914770")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 135.0709 123.19 0)
+			(at 91.8909 125.73 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8315,7 +8343,7 @@
 	)
 	(global_label "A15"
 		(shape input)
-		(at 137.16 93.98 180)
+		(at 102.87 92.71 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -8325,7 +8353,7 @@
 		)
 		(uuid "936efc9a-7b72-484b-988d-cfcda8373b2c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 131.3214 93.98 0)
+			(at 97.0314 92.71 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8866,7 +8894,7 @@
 	)
 	(global_label "A14"
 		(shape input)
-		(at 119.38 88.9 180)
+		(at 85.09 87.63 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -8876,7 +8904,7 @@
 		)
 		(uuid "e02dccfe-c7f3-4f17-a25d-3565cdac07d1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at -78.74 -6.35 0)
+			(at -113.03 -7.62 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9182,6 +9210,17 @@
 		)
 		(property "Description" ""
 			(at 43.18 86.36 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "connector/pin_header_socket"
+			(at 43.18 86.36 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9792,6 +9831,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 203.2 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "a1b9cdc9-49c2-4282-9b58-c4eba33c5601")
 		)
@@ -9845,7 +9895,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74LS00")
-		(at 151.13 120.65 0)
+		(at 107.95 123.19 0)
 		(unit 2)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -9855,7 +9905,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-0000612da63c")
 		(property "Reference" "U1"
-			(at 151.13 112.395 0)
+			(at 107.95 114.935 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9865,7 +9915,7 @@
 			)
 		)
 		(property "Value" "74HC00"
-			(at 151.13 114.7064 0)
+			(at 107.95 117.2464 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9875,7 +9925,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 151.13 120.65 0)
+			(at 107.95 123.19 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9886,7 +9936,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74ls00"
-			(at 151.13 120.65 0)
+			(at 107.95 123.19 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9897,7 +9947,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 151.13 120.65 0)
+			(at 107.95 123.19 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 107.95 123.19 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9959,7 +10020,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74LS00")
-		(at 144.78 91.44 0)
+		(at 110.49 90.17 0)
 		(unit 3)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -9969,7 +10030,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-0000612dd661")
 		(property "Reference" "U1"
-			(at 144.78 83.185 0)
+			(at 110.49 81.915 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9979,7 +10040,7 @@
 			)
 		)
 		(property "Value" "74HC00"
-			(at 144.78 85.4964 0)
+			(at 110.49 84.2264 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9989,7 +10050,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 144.78 91.44 0)
+			(at 110.49 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10000,7 +10061,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74ls00"
-			(at 144.78 91.44 0)
+			(at 110.49 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10011,7 +10072,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 144.78 91.44 0)
+			(at 110.49 90.17 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 110.49 90.17 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10128,6 +10200,17 @@
 		)
 		(property "Description" ""
 			(at 241.3 36.83 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 241.3 36.83 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10326,6 +10409,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 151.13 165.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9172f735-2cbf-4df3-9a54-2dd1908052dd")
 		)
@@ -10418,7 +10512,7 @@
 			)
 		)
 		(property "Value" "74HC00"
-			(at 43.18 143.1036 0)
+			(at 43.18 131.318 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10451,6 +10545,17 @@
 		)
 		(property "Description" ""
 			(at 43.18 137.16 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 43.18 137.16 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10506,82 +10611,6 @@
 				(path "/e2bcf69d-c4bd-4df2-83f6-821a82368f7e"
 					(reference "U1")
 					(unit 4)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 59.69 177.8 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "03e72978-a2a9-45ae-ba32-57060feaf5f6")
-		(property "Reference" "#PWR0110"
-			(at 59.69 184.15 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 59.817 182.1942 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 59.69 177.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 59.69 177.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 59.69 177.8 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "d1656aed-b4f8-478e-bb5c-da44449535dd")
-		)
-		(instances
-			(project "ram_board"
-				(path "/e2bcf69d-c4bd-4df2-83f6-821a82368f7e"
-					(reference "#PWR0110")
-					(unit 1)
 				)
 			)
 		)
@@ -10664,7 +10693,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74HC04")
-		(at 135.89 118.11 0)
+		(at 92.71 120.65 0)
 		(unit 6)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10675,7 +10704,7 @@
 		(fields_autoplaced yes)
 		(uuid "0facca80-eba6-4303-89e6-f6b99ecddd83")
 		(property "Reference" "U2"
-			(at 135.89 110.6002 0)
+			(at 92.71 113.1402 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10685,7 +10714,7 @@
 			)
 		)
 		(property "Value" "74HC04"
-			(at 135.89 113.1371 0)
+			(at 92.71 115.6771 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10695,7 +10724,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 135.89 118.11 0)
+			(at 92.71 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10706,7 +10735,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf"
-			(at 135.89 118.11 0)
+			(at 92.71 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10717,7 +10746,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 135.89 118.11 0)
+			(at 92.71 120.65 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 92.71 120.65 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10855,7 +10895,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74HC04")
-		(at 127 88.9 0)
+		(at 92.71 87.63 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10866,7 +10906,7 @@
 		(fields_autoplaced yes)
 		(uuid "347e3d0f-65d5-483a-9421-82bf1f384132")
 		(property "Reference" "U2"
-			(at 127 81.3902 0)
+			(at 92.71 80.1202 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10876,7 +10916,7 @@
 			)
 		)
 		(property "Value" "74HC04"
-			(at 127 83.9271 0)
+			(at 92.71 82.6571 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10886,7 +10926,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 127 88.9 0)
+			(at 92.71 87.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10897,7 +10937,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf"
-			(at 127 88.9 0)
+			(at 92.71 87.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10908,7 +10948,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 127 88.9 0)
+			(at 92.71 87.63 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 92.71 87.63 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11032,6 +11083,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 116.84 175.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e235d23d-13ab-48e0-a471-9416e0000b9d")
 		)
@@ -11139,6 +11201,17 @@
 		)
 		(property "Description" ""
 			(at 43.18 160.02 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 43.18 160.02 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11264,6 +11337,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 264.16 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "97aa7f2c-c217-4d3f-a4b7-09f0050efc4e")
 		)
@@ -11371,6 +11455,17 @@
 		)
 		(property "Description" ""
 			(at 181.61 132.08 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 181.61 132.08 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11495,6 +11590,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 133.35 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f5a85fc2-ea21-46eb-a5a9-8ed0d18589cf")
 		)
@@ -11568,6 +11674,17 @@
 		)
 		(property "Description" ""
 			(at 224.79 36.83 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 224.79 36.83 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11683,6 +11800,17 @@
 		)
 		(property "Description" ""
 			(at 181.61 146.05 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 181.61 146.05 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11821,7 +11949,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74HC04")
-		(at 67.31 161.29 0)
+		(at 43.18 149.86 0)
 		(unit 4)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -11832,7 +11960,7 @@
 		(fields_autoplaced yes)
 		(uuid "9b1189fb-ebee-4066-950c-e4f35f33395f")
 		(property "Reference" "U2"
-			(at 67.31 153.7802 0)
+			(at 43.18 142.3502 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11842,7 +11970,7 @@
 			)
 		)
 		(property "Value" "74HC04"
-			(at 67.31 156.3171 0)
+			(at 43.18 144.8871 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11852,7 +11980,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 67.31 161.29 0)
+			(at 43.18 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11863,7 +11991,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf"
-			(at 67.31 161.29 0)
+			(at 43.18 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11874,7 +12002,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 67.31 161.29 0)
+			(at 43.18 149.86 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 43.18 149.86 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12076,6 +12215,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 148.59 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "2f1f1e11-ac35-4cf8-ad87-8c1a03444617")
 		)
@@ -12148,6 +12298,17 @@
 		)
 		(property "Description" ""
 			(at 139.7 34.29 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 139.7 34.29 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12304,6 +12465,17 @@
 			)
 		)
 		(property "Description" "512K x 8 Low Power CMOS RAM, DIP-32"
+			(at 210.82 82.55 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
 			(at 210.82 82.55 0)
 			(hide yes)
 			(show_name no)
@@ -12484,6 +12656,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 118.11 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cbb0613d-6cf3-497c-883f-4f6f79aa5ff0")
 		)
@@ -12641,6 +12824,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 113.03 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "6b67d442-bf3c-468f-b75a-aed03ad02bd1")
 		)
@@ -12658,7 +12852,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74HC02")
-		(at 43.18 151.13 0)
+		(at 128.27 120.65 0)
 		(unit 2)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -12669,7 +12863,7 @@
 		(fields_autoplaced yes)
 		(uuid "d0241590-bac7-4f8f-8e2a-b319535c1ff4")
 		(property "Reference" "U4"
-			(at 43.18 143.1757 0)
+			(at 128.27 112.6957 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12679,7 +12873,7 @@
 			)
 		)
 		(property "Value" "74HC02"
-			(at 43.18 145.5999 0)
+			(at 128.27 115.1199 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12689,7 +12883,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 43.18 151.13 0)
+			(at 128.27 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12700,7 +12894,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74hc02"
-			(at 43.18 151.13 0)
+			(at 128.27 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12711,7 +12905,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 43.18 151.13 0)
+			(at 128.27 120.65 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 128.27 120.65 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12911,6 +13116,17 @@
 				)
 			)
 		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 43.18 172.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8c18157f-ffab-44dc-8b64-77450d214bee")
 		)
@@ -13019,6 +13235,17 @@
 		)
 		(property "Description" ""
 			(at 106.68 34.29 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "capacitor/THT/other"
+			(at 106.68 34.29 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13196,7 +13423,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74HC04")
-		(at 67.31 170.18 0)
+		(at 148.59 120.65 0)
 		(unit 3)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -13207,7 +13434,7 @@
 		(fields_autoplaced yes)
 		(uuid "fc0e8811-c9e9-4f48-ab64-0fa1292a36e9")
 		(property "Reference" "U2"
-			(at 67.31 162.6702 0)
+			(at 148.59 113.1402 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13217,7 +13444,7 @@
 			)
 		)
 		(property "Value" "74HC04"
-			(at 67.31 165.2071 0)
+			(at 148.59 115.6771 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13227,7 +13454,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 67.31 170.18 0)
+			(at 148.59 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13238,7 +13465,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf"
-			(at 67.31 170.18 0)
+			(at 148.59 120.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13249,7 +13476,18 @@
 			)
 		)
 		(property "Description" ""
-			(at 67.31 170.18 0)
+			(at 148.59 120.65 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "KiLib_Generator" "package/DIP/legacy"
+			(at 148.59 120.65 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
