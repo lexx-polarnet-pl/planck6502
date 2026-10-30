@@ -120,7 +120,7 @@ loop:
 	LDA PLANCK_SLOT_5	; bierzemy dane z nowego kontrolera klatiwatury
 	cmp #$00           ; nothing pressed, go back
 	beq loop
-	cmp #$0a           ; enter - go to second line
+	cmp #$0d           ; enter - go to second line
 	beq enter_pressed
 	cmp #$1b           ; escape - clear display
 	beq esc_pressed	
