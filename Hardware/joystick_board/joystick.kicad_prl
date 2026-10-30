@@ -50,7 +50,7 @@
       "shapes"
     ],
     "visible_layers": "00000000_00000000_0fffffff_ffffffff",
-    "zone_display_mode": 1
+    "zone_display_mode": 0
   },
   "git": {
     "integration_disabled": false,
@@ -59,7 +59,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "proto_board.kicad_prl",
+    "filename": "joystick.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {
