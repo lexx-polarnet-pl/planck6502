@@ -35,7 +35,7 @@ pass_flag:  .res 1      ; Flaga błędu (0 = OK, >0 = Błąd)
 CTRL_REG = $FFC0        ; Rejestr sterowania bankowaniem
 
 START:
-        jsr bios_clear_screen
+        ;jsr bios_clear_screen
 
         lda #<banner_str
         ldy #>banner_str
@@ -463,31 +463,31 @@ print_dec4:
 ; ---------------------------------------------------------
 
 banner_str:
-        .byte "=== TESTER PAMIECI RAM 6502 ===", $0D, $0A, $00
+        .byte "=== Planck W65C02 RAM TESTER ===", $0D, $0A, $00
 
 msg_base_ram:
-        .byte "Test RAM podstawowego ($1000-$7FFF): ", $00
+        .byte "Testing base RAM ($1000-$7FFF): ", $00
 
 msg_card_detect:
-        .byte "Detekcja karty Shadow RAM: ", $00
+        .byte "Shadow RAM card detection: ", $00
 
 msg_present:
-        .byte "OBECNA", $0D, $0A, $00
+        .byte "PRESENT", $0D, $0A, $00
 
 msg_not_present:
-        .byte "BRAK KARTY", $0D, $0A, $00
+        .byte "NOT PRESENT", $0D, $0A, $00
 
 msg_bank_count:
-        .byte "Liczba wykrytych bankow: ", $00
+        .byte "Detected bank count: ", $00
 
 msg_banks_found:
-        .byte " bank(ow) (", $00
+        .byte " bank(s) (", $00
 
 msg_testing_shadow:
-        .byte " KB)", $0D, $0A, "Testowanie bankow Shadow RAM: ", $00
+        .byte " KB)", $0D, $0A, "Testing Shadow RAM banks: ", $00
 
 msg_ok:
         .byte "OK", $0D, $0A, $00
 
 msg_fail:
-        .byte "BLAD!", $0D, $0A, $00	
+        .byte "ERROR!", $0D, $0A, $00
