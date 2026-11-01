@@ -6239,7 +6239,7 @@
 			)
 		)
 		(property "Value" "Battery_Cell"
-			(at 12.4 13 180)
+			(at 8.385359 -2.647014 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(uuid "3eccaea3-829e-405a-816f-f489be287694")
@@ -6440,7 +6440,7 @@
 			(uuid "d32a59ee-731d-4ba4-b617-81af201b714d")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 12.4 0 180)
+			(at 5.715 -0.635 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(uuid "aa8407cf-3da2-41a2-8880-91a4e2b30ca9")
@@ -7111,7 +7111,7 @@
 			)
 		)
 		(property "Value" "AVR-ISP-6"
-			(at 6.215 11.18 0)
+			(at -2.54 1.905 270)
 			(layer "F.Fab")
 			(uuid "ccbf1fea-956a-4595-997d-30634ba80c50")
 			(effects
@@ -10285,7 +10285,7 @@
 		(at 163.27 80.43 -90)
 		(descr "DS15, Crystal, length 5.0mm, width 1.5mm, THT, https://www.microcrystal.com/fileadmin/Media/Products/32kHz/Datasheet/DS-Series.pdf")
 		(property "Reference" "Y1"
-			(at -1.59 1.25 0)
+			(at -1.15 1.98 0)
 			(layer "F.SilkS")
 			(uuid "b4592288-9175-4673-a756-152db7922123")
 			(effects
@@ -13475,7 +13475,7 @@
 		)
 	)
 	(gr_text "JLCJLCJLCJLC"
-		(at 117.475 87.63 0)
+		(at 118.11 87.63 0)
 		(layer "F.SilkS")
 		(uuid "93b1ad5f-0aef-447f-bb70-1e993970cfe3")
 		(effects
@@ -16380,6 +16380,38 @@
 		(uuid "fb4a05ea-206c-452c-8a00-2f062fddbfb5")
 	)
 	(segment
+		(start 130.175 125.095)
+		(end 128.27 127)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "Net-(RDY1-A)")
+		(uuid "6f8aade9-8a84-435e-8f38-0735b36e2837")
+	)
+	(segment
+		(start 128.27 127)
+		(end 118.11 127)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "Net-(RDY1-A)")
+		(uuid "a3503b5b-89ee-46e2-9cb7-aaa1f2804f00")
+	)
+	(segment
+		(start 118.11 127)
+		(end 116.84 128.27)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "Net-(RDY1-A)")
+		(uuid "a45510c0-4ffd-4a74-9e74-dc10f1a6e17d")
+	)
+	(segment
+		(start 133.985 125.095)
+		(end 130.175 125.095)
+		(width 0.25)
+		(layer "F.Cu")
+		(net "Net-(RDY1-A)")
+		(uuid "b2a0531d-8f5b-4f40-865a-576366f560b4")
+	)
+	(segment
 		(start 143.51 95.25)
 		(end 151.13 95.25)
 		(width 0.25)
@@ -17538,38 +17570,6 @@
 		(layer "B.Cu")
 		(net "RDY_STROBE")
 		(uuid "fd4d289f-2e1b-4313-a241-e98b6a8e221a")
-	)
-	(segment
-		(start 130.175 125.095)
-		(end 128.27 127)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "Net-(RDY1-A)")
-		(uuid "6f8aade9-8a84-435e-8f38-0735b36e2837")
-	)
-	(segment
-		(start 128.27 127)
-		(end 118.11 127)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "Net-(RDY1-A)")
-		(uuid "a3503b5b-89ee-46e2-9cb7-aaa1f2804f00")
-	)
-	(segment
-		(start 118.11 127)
-		(end 116.84 128.27)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "Net-(RDY1-A)")
-		(uuid "a45510c0-4ffd-4a74-9e74-dc10f1a6e17d")
-	)
-	(segment
-		(start 133.985 125.095)
-		(end 130.175 125.095)
-		(width 0.25)
-		(layer "F.Cu")
-		(net "Net-(RDY1-A)")
-		(uuid "b2a0531d-8f5b-4f40-865a-576366f560b4")
 	)
 	(zone
 		(net "+5V")
