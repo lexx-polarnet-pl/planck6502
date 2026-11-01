@@ -444,9 +444,9 @@ void echoChar(unsigned char znak) {
             csi_building = false;
             return;
         }    
-        if (znak == '\n') {          
+        if (znak == '\r') {          
             txt_cursor_x = 0;  
-        } else if (znak == '\r') {
+        } else if (znak == '\n') {
             txt_cursor_y++;
             if (txt_cursor_y >= TXT_SCREEN_SIZE_Y) {
                 moveScreenUp();
