@@ -229,6 +229,8 @@ bios_cf_load:
 	jmp cf_load
 bios_bell:
 	jmp opl_error_gong
+bios_get_random_number:
+	jmp GET_RANDOM
 
 ret_from_irq:
 	rti

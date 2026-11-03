@@ -6,6 +6,7 @@
 .export _bcolor
 .export _clrscr
 .export _bell
+.export _get_random_byte
 .export initmainargs
 .export bios_get_param_buffer
 
@@ -38,6 +39,9 @@ _clrscr:
 		
 _bell:
 		jmp bios_bell
+		
+_get_random_byte:
+		jmp bios_get_random_number 	; BIOS: A = losowa
 		
 ; Zamiast wykonywać cokolwiek, initmainargs po prostu wraca
 initmainargs:

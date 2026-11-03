@@ -5,6 +5,7 @@ void __fastcall__ clrscr(void);
 void __fastcall__ print_str(const char *s);
 char __fastcall__ getch(void);
 void __fastcall__ bell(void);
+char __fastcall__ get_random_byte(void);
 
 enum colors {DEFAULT, BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, 
     DARK_GREEN, MED_GREEN, DARK_BLUE,  LIGHT_BLUE, DARK_ORANGE, ORANGE, PINK, LIGHT_PINK} ;

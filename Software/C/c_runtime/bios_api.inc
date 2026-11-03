@@ -13,3 +13,4 @@ bios_background_color = $FF1E
 bios_get_param_buffer = $FF21
 bios_cf_load = $FF24
 bios_bell = $FF27
+bios_get_random_number = $FF2A

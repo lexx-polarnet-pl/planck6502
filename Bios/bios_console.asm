@@ -1,4 +1,5 @@
 SYS_CTRL_STAT     = MEGA_CONSOLE_PORT + $F   ; System Status & Control Register
+RNG_DATA          = MEGA_CONSOLE_PORT + $E   ; Random Number Generator Data Register
 
 ; Maski bitowe dla odczytu statusu
 MASK_KBD_PRESENT   = %00010000   ; Bit 4: Klawiatura podłączona
@@ -215,3 +216,6 @@ mouse_not_found:
     JSR print_str
     RTS
 
+GET_RANDOM:
+    LDA RNG_DATA        ; Wracaj natychmiast z nową wartością 0-255 w akumulatorze
+    RTS
