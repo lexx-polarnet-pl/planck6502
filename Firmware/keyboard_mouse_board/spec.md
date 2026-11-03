@@ -34,7 +34,9 @@ Dokument zawiera specyfikację techniczną układu I/O opartego na mikrokontrole
 Obsługa RTC odczytuje czas z DS1307+ podczas startu i dodaje do bufora
 klawiatury wpis `RTC: YYYY-MM-DD HH:MM:SS`. Rejestry RTC są dostępne przez
 magistralę 6502 jako wartości BCD; godzina jest zawsze zwracana i zapisywana
-w formacie 24-godzinnym. Nieprawidłowe wartości podczas zapisu są odrzucane.
+w formacie 24-godzinnym. Zapis przekazuje spakowane BCD bez konwersji
+(np. 23 dziesiętnie to `$23`, a nie `$17`). Nieprawidłowe cyfry BCD i wartości
+poza zakresem pola są odrzucane.
 
 Wstępna obsługa myszy PS/2 używa PB5 (DATA) i PB6 (CLK), wykonuje reset myszy
 i włącza raportowanie ruchu. Status połączenia oraz raport z pozycją
