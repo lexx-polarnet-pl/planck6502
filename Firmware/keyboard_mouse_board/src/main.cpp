@@ -14,6 +14,8 @@ static bool error_output_enabled = false;
 constexpr uint8_t SYS_CTRL_STAT_KEYBOARD_PRESENT = 1 << 4;
 constexpr uint8_t SYS_CTRL_STAT_MOUSE_PRESENT = 1 << 5;
 
+uint8_t loopback = 0x55;
+
 // Pinout ATmega328P
 #define PIN_CS            PB0
 #define PIN_RW            PB1
@@ -101,13 +103,13 @@ void setup()
     show_message("\x1B[0m\x1B[2J\x1B[H"); // Clear screen
 
     nvram_init();
+    rtc_init();
     random_init();
     keyboard_init();
     mouse_init();
     // TEMPORARY: remove this call after the first successful RTC test.
     // Otherwise every reboot resets the clock to this firmware's build time.
     //rtc_set_time_to_build_time();
-    rtc_init();
 }
 
 // ============================================================================
@@ -115,6 +117,9 @@ void setup()
 // ============================================================================
 void loop()
 {
+    // Release the shared data bus before the next 6502 cycle. A prior read
+    // leaves DDRD configured as output until this point.
+    dataBusInput();
     mouse_poll();
 
     if (!csActive())
@@ -141,6 +146,9 @@ void loop()
             case 0x02: // KBD_STAT (BASE + $2)
                 dataBusOutput(keyboard_read_status());
                 break;
+            case 0x03: // loopback
+                dataBusOutput(loopback);
+                break;                
 
             case 0x06: // RTC_SEC (BASE + $6)
             case 0x07: // RTC_MIN (BASE + $7)
@@ -167,6 +175,10 @@ void loop()
 
             case 0x0D: // NVRAM_DATA (BASE + $D)
                 dataBusOutput(nvram_read(nvram_address));
+                break;
+            
+            case 0x0E: // SYS_CTRL (BASE + $E)
+                dataBusOutput(random_byte()); // RND generator
                 break;
 
             case 0x0F: // SYS_CTRL_STAT (BASE + $F)
@@ -197,6 +209,10 @@ void loop()
             case 0x01: // KBD_CTRL (BASE + $1)
                 keyboard_write_control(data_in);
                 break;
+
+            case 0x03: // loopback
+                loopback = data_in;
+                break;                
 
             case 0x06: // RTC_SEC (BASE + $6)
             case 0x07: // RTC_MIN (BASE + $7)

@@ -21,6 +21,12 @@ uint8_t to_bcd(uint8_t value)
 
 bool parse_two_digits(const char* value, uint8_t& result)
 {
+    if (value[0] == ' ' && value[1] >= '0' && value[1] <= '9')
+    {
+        result = value[1] - '0';
+        return true;
+    }
+
     if (value[0] < '0' || value[0] > '9'
         || value[1] < '0' || value[1] > '9')
     {

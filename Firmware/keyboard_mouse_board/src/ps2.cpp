@@ -2,6 +2,7 @@
 
 #include "mouse.h"
 #include "ps2.h"
+#include "random.h"
 
 namespace
 {
@@ -406,6 +407,7 @@ ISR(PCINT0_vect)
 {
     const uint8_t current_pins = PINB;
     const uint8_t enabled_pins = PCMSK0;
+    //random_add_entropy(static_cast<uint8_t>(TCNT0 ^ current_pins));
 
     if ((enabled_pins & _BV(PIN_PS2_KB_CLK))
         && (ps2_last_pins & _BV(PIN_PS2_KB_CLK))
