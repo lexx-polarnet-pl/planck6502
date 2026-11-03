@@ -4,9 +4,9 @@ SPINNER_FRAMES     = 4          ; Liczba klatek (zmień na 8 dla 8 znaków)
 RTC_SEC   = MEGA_CONSOLE_PORT + $6   ; Sekundy (00-59, BCD)
 RTC_MIN   = MEGA_CONSOLE_PORT + $7   ; Minuty (00-59, BCD)
 RTC_HOUR  = MEGA_CONSOLE_PORT + $8   ; Godziny (00-23, BCD)
-RTC_DAY   = MEGA_CONSOLE_PORT + $9   ; Dzień miesiąca (1-31, Binarnie)
-RTC_MONTH = MEGA_CONSOLE_PORT + $A   ; Miesiąc (1-12, Binarnie)
-RTC_YEAR  = MEGA_CONSOLE_PORT + $B   ; Rok (00-99, Binarnie)
+RTC_DAY   = MEGA_CONSOLE_PORT + $9   ; Dzień miesiąca (01-31, BCD)
+RTC_MONTH = MEGA_CONSOLE_PORT + $A   ; Miesiąc (01-12, BCD)
+RTC_YEAR  = MEGA_CONSOLE_PORT + $B   ; Rok (00-99, BCD)
 
 .segment "BIOS_VECTORS"
 spinner_state:     .res 1       ; Alokacja 1 bajtu na stan spinnera w RAM
