@@ -28,6 +28,7 @@ int prevX, prevY;
 // Function to generate the fruit
 // within the boundary
 void setup() {
+    
     key = 0;
     snakeTailLen = 0;
     // Flag to signal the gameover
@@ -230,8 +231,20 @@ void logic() {
     }
 }
 
+unsigned int get_seed_16bit() {
+    char msb;
+    char lsb;
+
+    /* Deklaracje zmiennych MUSZĄ być na samej górze */
+    msb = get_random_byte();
+    lsb = get_random_byte();
+
+    return ((unsigned int)msb << 8) | lsb;
+}
+
 void main() {
     int delay,exit;
+    srand(get_seed_16bit());
     // Initial set up that initialize the
     // required variables
     exit = 0;
