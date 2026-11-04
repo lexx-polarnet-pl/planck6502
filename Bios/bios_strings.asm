@@ -44,7 +44,7 @@ MSG_WELCOME:  	.BYTE "DOS gotowy.", $00
 MSG_BAD_CMD:  	.BYTE "Zła komenda lub nazwa pliku", $07,$00
 MSG_INCOMPATIBLE_PROGRAM: .BYTE "Program niezgodny z Lexx DOS", $07, $00
 MSG_HELP:     	.BYTE "Dostępne komendy: HELP, CD, TYPE, CLS, DIR, VER, MON, BASIC, SLOAD", $00
-MSG_VER:      	.BYTE "Lexx DOS Version 0.1 (c) 2026", $00
+MSG_VER:      	.BYTE "Lexx DOS Version 0.2 (c) 2026", $00
 MSG_CD_USAGE: 	.byte "CD użycie: CD <katalog>", 0
 MSG_TYPE_USAGE:	.byte "TYPE użycie: TYPE <plik>", 0	
 
@@ -53,6 +53,7 @@ MSG_TYPE_USAGE:	.byte "TYPE użycie: TYPE <plik>", 0
 ; ---------------------------------------------------------
 msg_post_prefix: .byte "Test RAM: Bazowy  ", $00
 msg_base_ok:     .byte $08,"OK | Rozszerzony: ", $00
+msg_detect_card: .byte "Rozszerzenie pamięci: ", $00
 msg_no_card:     .byte "Brak", $0D, $0A, $00
 msg_banks:       .byte " banków (", $00
 msg_kb:          .byte "KB)  ", $00

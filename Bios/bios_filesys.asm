@@ -1,5 +1,5 @@
 ; ==============================================================================
-; DOS / COMPACTFLASH FAT16 - TRYB TYLKO DO ODCZYTU
+; DOS / COMPACTFLASH FAT16
 ; ==============================================================================
 ;
 ; Założenia:
@@ -9,7 +9,7 @@
 ;   - sektor = 512 bajtów
 ;   - CF pracuje w trybie 8-bitowym
 ;   - LBA28
-;   - brak zapisu na CF
+;   - zapis FAT16 obsługuje jeden otwarty plik
 ;   - ignorowane są:
 ;       * pozostałe partycje
 ;       * LFN (VFAT)
@@ -68,6 +68,23 @@
 ;   Działanie:
 ;       wyświetla zawartość pliku przez BIOS print_char.
 ;
+; cf_open
+;   WEJŚCIE: ptr_filename, A=CF_MODE_READ/WRITE/APPEND
+;   WYJŚCIE: A=CF_FILE_HANDLE przy sukcesie lub kod błędu; C=1 błąd
+;
+; cf_close / cf_read_byte / cf_write_byte
+;   WEJŚCIE: X=CF_FILE_HANDLE
+;   cf_read_byte:  A=bajt, C=1 przy EOF/błędzie
+;   cf_write_byte: A=bajt wejściowy, C=1 przy błędzie
+;   cf_close:      C=1 przy błędzie
+;
+; cf_delete
+;   WEJŚCIE: ptr_filename -> 11-bajtowa nazwa FAT 8.3
+;   WYJŚCIE: C=0 sukces, C=1 błąd
+;
+; Jednocześnie może być otwarty tylko jeden plik. CF_MODE_WRITE
+; zeruje plik, a CF_MODE_APPEND dopisuje za jego końcem.
+;
 ; ------------------------------------------------------------------------------
 ; ZMIENNE WEJŚCIOWE - ZEROPAGE
 ; ------------------------------------------------------------------------------
@@ -115,6 +132,7 @@ CF_COMMAND    = CF_CARD_PORT + 7
 ; ------------------------------------------------------------------------------
 
 CF_CMD_READ   = $20
+CF_CMD_WRITE  = $30
 CF_CMD_FEAT   = $EF
 
 CF_FEAT_8BIT  = $01
@@ -141,6 +159,18 @@ CFERR_BAD_FAT    = $05
 CFERR_NOT_MOUNT  = $06
 CFERR_BAD_FS     = $07
 CFERR_PATH_LONG  = $08
+CFERR_BUSY       = $09
+CFERR_WRITE      = $0A
+CFERR_NO_SPACE   = $0B
+CFERR_BAD_HANDLE = $0C
+CFERR_EOF        = $0D
+CFERR_ACCESS     = $0E
+CFERR_BAD_MODE   = $0F
+
+CF_MODE_READ     = $00
+CF_MODE_WRITE    = $01
+CF_MODE_APPEND   = $02
+CF_FILE_HANDLE   = $01
 
 
 ; ==============================================================================
@@ -167,6 +197,8 @@ dir_ptr_h    = Z5
 ; ------------------------------------------------------------------------------
 
 fat_part_lba:       .res 4     ; początek pierwszej partycji
+fat_part_end:       .res 4     ; pierwszy LBA za partycją
+fat_volume_end:     .res 4     ; pierwszy LBA za woluminem
 
 fat_sec_p_clus:     .res 1     ; sektory / klaster
 fat_res_sec:        .res 2     ; sektory zarezerwowane
@@ -191,6 +223,7 @@ dir_root:           .res 1     ; !=0 gdy iterujemy Root Directory
 dir_root_left:      .res 2     ; pozostałe sektory Root Directory
 
 dir_entry_count:    .res 1     ; wpisy pozostałe w sektorze
+dir_entry_offset:   .res 1
 
 dir_file_count:     .res 2
 dir_folder_count:   .res 2
@@ -216,8 +249,26 @@ cf_lba:             .res 4
 ; ------------------------------------------------------------------------------
 
 file_cluster:       .res 2
-file_sector_idx:     .res 1
+file_first_cluster: .res 2
+file_sector_idx:    .res 1
+file_offset:        .res 2
 file_bytes:         .res 4
+file_position:      .res 4
+file_mode:          .res 1
+file_open:          .res 1
+file_buffer_valid:  .res 1
+file_buffer_dirty:  .res 1
+file_dir_lba:       .res 4
+file_dir_offset:    .res 1
+file_buffer_lba:    .res 4
+file_io_byte:       .res 1
+file_tmp_cluster:   .res 2
+file_link_cluster:  .res 2
+file_fat_value:     .res 2
+file_fat_copies:    .res 1
+file_entry_offset:  .res 1
+file_entry_found:   .res 1
+file_append_left:   .res 4
 
 ; ------------------------------------------------------------------------------
 ; Tymczasowe dane
@@ -264,6 +315,9 @@ sector_buffer:
 
     jsr cf_cwd_reset
     stz cf_mounted
+    stz file_open
+    stz file_buffer_valid
+    stz file_buffer_dirty
     stz cf_error
 
     lda #<msg_init
@@ -380,6 +434,28 @@ sector_buffer:
     lda sector_buffer+$1C9
     sta fat_part_lba+3
 
+    lda sector_buffer+$1CA
+    ora sector_buffer+$1CB
+    ora sector_buffer+$1CC
+    ora sector_buffer+$1CD
+    bne @partition_size_ok
+    jmp err_bad_bpb
+
+@partition_size_ok:
+    clc
+    lda fat_part_lba
+    adc sector_buffer+$1CA
+    sta fat_part_end
+    lda fat_part_lba+1
+    adc sector_buffer+$1CB
+    sta fat_part_end+1
+    lda fat_part_lba+2
+    adc sector_buffer+$1CC
+    sta fat_part_end+2
+    lda fat_part_lba+3
+    adc sector_buffer+$1CD
+    sta fat_part_end+3
+
     ; --------------------------------------------------------------------------
     ; VBR
     ; --------------------------------------------------------------------------
@@ -402,6 +478,72 @@ sector_buffer:
     jmp err_read
 
 @vbr_ok:
+
+    ; Koniec woluminu z BPB TotalSectors16 lub TotalSectors32.
+
+    lda sector_buffer+$13
+    ora sector_buffer+$14
+    beq @total_sectors_32
+
+    clc
+    lda fat_part_lba
+    adc sector_buffer+$13
+    sta fat_volume_end
+    lda fat_part_lba+1
+    adc sector_buffer+$14
+    sta fat_volume_end+1
+    lda fat_part_lba+2
+    adc #0
+    sta fat_volume_end+2
+    lda fat_part_lba+3
+    adc #0
+    sta fat_volume_end+3
+    bra @total_sectors_ok
+
+@total_sectors_32:
+    lda sector_buffer+$20
+    ora sector_buffer+$21
+    ora sector_buffer+$22
+    ora sector_buffer+$23
+    bne @have_total_sectors_32
+    jmp err_bad_bpb
+
+@have_total_sectors_32:
+    clc
+    lda fat_part_lba
+    adc sector_buffer+$20
+    sta fat_volume_end
+    lda fat_part_lba+1
+    adc sector_buffer+$21
+    sta fat_volume_end+1
+    lda fat_part_lba+2
+    adc sector_buffer+$22
+    sta fat_volume_end+2
+    lda fat_part_lba+3
+    adc sector_buffer+$23
+    sta fat_volume_end+3
+
+@total_sectors_ok:
+    lda fat_volume_end+3
+    cmp fat_part_end+3
+    bcc @volume_within_partition
+    bne @volume_outside_partition
+    lda fat_volume_end+2
+    cmp fat_part_end+2
+    bcc @volume_within_partition
+    bne @volume_outside_partition
+    lda fat_volume_end+1
+    cmp fat_part_end+1
+    bcc @volume_within_partition
+    bne @volume_outside_partition
+    lda fat_volume_end
+    cmp fat_part_end
+    bcc @volume_within_partition
+    beq @volume_within_partition
+@volume_outside_partition:
+    jmp err_bad_bpb
+
+@volume_within_partition:
 
     ; --------------------------------------------------------------------------
     ; Bytes per sector musi być 512
@@ -911,6 +1053,79 @@ sector_buffer:
 
 
 ; ==============================================================================
+; CF WRITE SECTOR
+;
+; Wejście: cf_lba, sector_buffer
+; Wyjście: C=0 OK, C=1 błąd zapisu
+; ==============================================================================
+.proc cf_write_sector
+
+    jsr cf_wait_ready
+    bcc @ready
+    jmp @fail
+
+@ready:
+
+    lda cf_lba+3
+    and #$F0
+    beq @lba_ok
+    jmp @fail
+
+@lba_ok:
+
+    lda #$E0
+    ora cf_lba+3
+    and #$EF
+    sta CF_HEAD
+
+    lda cf_lba+2
+    sta CF_LBA_HIGH
+    lda cf_lba+1
+    sta CF_LBA_MID
+    lda cf_lba
+    sta CF_LBA_LOW
+    lda #1
+    sta CF_SEC_CNT
+    lda #CF_CMD_WRITE
+    sta CF_COMMAND
+
+    jsr cf_wait_drq
+    bcc @data_ready
+    jmp @fail
+
+@data_ready:
+
+    ldy #0
+@write_first_page:
+    lda sector_buffer,y
+    sta CF_DATA
+    iny
+    bne @write_first_page
+
+    ldy #0
+@write_second_page:
+    lda sector_buffer+$100,y
+    sta CF_DATA
+    iny
+    bne @write_second_page
+
+    jsr cf_wait_ready
+    bcc @ok
+
+@fail:
+    lda #CFERR_WRITE
+    sta cf_error
+    sec
+    rts
+
+@ok:
+    clc
+    rts
+
+.endproc
+
+
+; ==============================================================================
 ; CF DIRECTORY OPEN
 ;
 ; Przygotowuje stan iteratora bieżącego katalogu.
@@ -919,6 +1134,16 @@ sector_buffer:
 ; C=1 ERROR
 ; ==============================================================================
 .proc cf_dir_open
+
+    lda file_open
+    beq @available
+
+    lda #CFERR_BUSY
+    sta cf_error
+    sec
+    rts
+
+@available:
 
     stz dir_entry_count
     stz dir_sector_idx
@@ -1127,6 +1352,7 @@ sector_buffer:
     lda #>sector_buffer
     sta dir_ptr_h
 
+    stz dir_entry_offset
     lda #16
     sta dir_entry_count
 
@@ -1174,7 +1400,16 @@ sector_buffer:
     cpy #11
     bne @compare
 
-    ; znaleziono
+    lda cf_lba
+    sta file_dir_lba
+    lda cf_lba+1
+    sta file_dir_lba+1
+    lda cf_lba+2
+    sta file_dir_lba+2
+    lda cf_lba+3
+    sta file_dir_lba+3
+    lda dir_entry_offset
+    sta file_dir_offset
 
     clc
     rts
@@ -1192,6 +1427,7 @@ sector_buffer:
 
 @entry_no_page:
 
+    inc dir_entry_offset
     dec dir_entry_count
     bne @entry_loop
 
@@ -1871,6 +2107,15 @@ sector_buffer:
 ; ==============================================================================
 .proc cf_cd_root
 
+    lda file_open
+    beq @close_ok
+    lda #CFERR_BUSY
+    sta cf_error
+    sec
+    rts
+
+@close_ok:
+
     stz cur_dir_cluster
     stz cur_dir_cluster+1
     jsr cf_cwd_reset
@@ -2291,6 +2536,14 @@ sector_buffer:
     lda (dir_ptr_l),y
     sta file_bytes+3
 
+    stz file_position
+    stz file_position+1
+    stz file_position+2
+    stz file_position+3
+    stz file_sector_idx
+    stz file_offset
+    stz file_offset+1
+
     stz file_sector_idx
 
     clc
@@ -2298,6 +2551,1359 @@ sector_buffer:
 
 @fail:
 
+    sec
+    rts
+
+.endproc
+
+
+; ==============================================================================
+; FILESYSTEM WRITE HELPERS
+; ==============================================================================
+.proc cf_find_free_entry
+
+    stz cf_error
+    jsr cf_dir_open
+    bcc @open_ok
+    sec
+    rts
+
+@open_ok:
+
+@sector_loop:
+    jsr cf_read_sector
+    bcc @sector_ok
+    sec
+    rts
+
+@sector_ok:
+    lda #<sector_buffer
+    sta dir_ptr_l
+    lda #>sector_buffer
+    sta dir_ptr_h
+    stz dir_entry_offset
+    lda #16
+    sta dir_entry_count
+
+@entry_loop:
+    ldy #0
+    lda (dir_ptr_l),y
+    beq @end_marker
+    cmp #$E5
+    beq @deleted_entry
+
+    clc
+    lda dir_ptr_l
+    adc #32
+    sta dir_ptr_l
+    bcc @same_page
+    inc dir_ptr_h
+@same_page:
+    inc dir_entry_offset
+    dec dir_entry_count
+    bne @entry_loop
+
+    jsr cf_dir_next_sector
+    bcc @sector_loop
+    lda cf_error
+    bne @fail
+    lda dir_root
+    bne @directory_full
+    jsr cf_extend_current_directory
+    bcs @fail
+    clc
+    rts
+
+@directory_full:
+    lda #CFERR_NO_SPACE
+    sta cf_error
+@fail:
+    sec
+    rts
+
+@found:
+    lda cf_lba
+    sta file_dir_lba
+    lda cf_lba+1
+    sta file_dir_lba+1
+    lda cf_lba+2
+    sta file_dir_lba+2
+    lda cf_lba+3
+    sta file_dir_lba+3
+    lda dir_entry_offset
+    sta file_dir_offset
+    clc
+    rts
+
+@end_marker:
+    lda #1
+    sta file_entry_found
+    bra @found
+
+@deleted_entry:
+    stz file_entry_found
+    bra @found
+
+.endproc
+
+
+.proc cf_extend_current_directory
+
+    lda dir_cluster
+    sta file_link_cluster
+    lda dir_cluster+1
+    sta file_link_cluster+1
+
+    jsr cf_allocate_cluster
+    bcs @fail
+    lda cf_lookup_cluster
+    sta file_fat_value
+    lda cf_lookup_cluster+1
+    sta file_fat_value+1
+
+    lda file_link_cluster
+    sta file_tmp_cluster
+    lda file_link_cluster+1
+    sta file_tmp_cluster+1
+    jsr cf_set_fat_entry
+    bcs @fail
+
+    lda file_fat_value
+    sta cf_lookup_cluster
+    lda file_fat_value+1
+    sta cf_lookup_cluster+1
+    jsr cf_calc_cluster_lba
+    lda cf_lba
+    sta file_dir_lba
+    lda cf_lba+1
+    sta file_dir_lba+1
+    lda cf_lba+2
+    sta file_dir_lba+2
+    lda cf_lba+3
+    sta file_dir_lba+3
+    stz file_dir_offset
+    lda #1
+    sta file_entry_found
+
+    ldx #0
+    lda #0
+@clear:
+    sta sector_buffer,x
+    sta sector_buffer+$100,x
+    inx
+    bne @clear
+    jsr cf_write_sector
+    rts
+
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_set_file_dir_pointer
+
+    stz dir_ptr_l
+    lda file_dir_offset
+    sta dir_ptr_h
+    ldx #5
+@shift:
+    asl dir_ptr_l
+    rol dir_ptr_h
+    dex
+    bne @shift
+
+    clc
+    lda dir_ptr_l
+    adc #<sector_buffer
+    sta dir_ptr_l
+    lda dir_ptr_h
+    adc #>sector_buffer
+    sta dir_ptr_h
+    rts
+
+.endproc
+
+
+.proc cf_load_file_dir_sector
+
+    lda file_dir_lba
+    sta cf_lba
+    lda file_dir_lba+1
+    sta cf_lba+1
+    lda file_dir_lba+2
+    sta cf_lba+2
+    lda file_dir_lba+3
+    sta cf_lba+3
+    jsr cf_read_sector
+    bcs @fail
+    jsr cf_set_file_dir_pointer
+    clc
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_write_file_dir_sector
+    jmp cf_write_sector
+.endproc
+
+
+.proc cf_create_file_entry
+
+    jsr cf_load_file_dir_sector
+    bcs @fail
+
+    ldy #0
+    lda #0
+@clear:
+    sta (dir_ptr_l),y
+    iny
+    cpy #32
+    bne @clear
+
+    ldy #0
+@name:
+    lda (ptr_filename),y
+    sta (dir_ptr_l),y
+    iny
+    cpy #11
+    bne @name
+
+    ldy #$0B
+    lda #$20
+    sta (dir_ptr_l),y
+
+    lda file_entry_found
+    beq @write_entry
+    lda file_dir_offset
+    cmp #15
+    beq @next_sector
+
+    clc
+    lda dir_ptr_l
+    adc #32
+    sta dir_ptr_l
+    bcc @same_page
+    inc dir_ptr_h
+@same_page:
+    ldy #0
+    lda #0
+    sta (dir_ptr_l),y
+    bra @write_entry
+
+@next_sector:
+    jsr cf_write_file_dir_sector
+    bcs @fail
+    jsr cf_dir_next_sector
+    bcc @write_end_marker
+    lda cf_error
+    bne @fail
+    clc
+    rts
+
+@write_end_marker:
+    jsr cf_read_sector
+    bcs @fail
+    stz sector_buffer
+    jsr cf_write_sector
+    rts
+
+@write_entry:
+    jsr cf_write_file_dir_sector
+    rts
+
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_update_file_dir
+
+    jsr cf_load_file_dir_sector
+    bcs @fail
+
+    ldy #$1A
+    lda file_first_cluster
+    sta (dir_ptr_l),y
+    iny
+    lda file_first_cluster+1
+    sta (dir_ptr_l),y
+    iny
+    lda file_bytes
+    sta (dir_ptr_l),y
+    iny
+    lda file_bytes+1
+    sta (dir_ptr_l),y
+    iny
+    lda file_bytes+2
+    sta (dir_ptr_l),y
+    iny
+    lda file_bytes+3
+    sta (dir_ptr_l),y
+
+    jsr cf_write_file_dir_sector
+    rts
+
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_delete_file_entry
+
+    jsr cf_load_file_dir_sector
+    bcs @fail
+    ldy #0
+    lda #$E5
+    sta (dir_ptr_l),y
+    jsr cf_write_file_dir_sector
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_set_fat_entry
+
+    lda fat_fat_lba
+    sta cf_lba
+    lda fat_fat_lba+1
+    sta cf_lba+1
+    lda fat_fat_lba+2
+    sta cf_lba+2
+    lda fat_fat_lba+3
+    sta cf_lba+3
+
+    clc
+    lda cf_lba
+    adc file_tmp_cluster+1
+    sta cf_lba
+    lda cf_lba+1
+    adc #0
+    sta cf_lba+1
+    lda cf_lba+2
+    adc #0
+    sta cf_lba+2
+    lda cf_lba+3
+    adc #0
+    sta cf_lba+3
+
+    lda file_tmp_cluster
+    asl a
+    sta dir_ptr_l
+    lda #>sector_buffer
+    adc #0
+    sta dir_ptr_h
+
+    lda fat_num_fats
+    sta file_fat_copies
+@copy_loop:
+    jsr cf_read_sector
+    bcs @fail
+    ldy #0
+    lda file_fat_value
+    sta (dir_ptr_l),y
+    iny
+    lda file_fat_value+1
+    sta (dir_ptr_l),y
+    jsr cf_write_sector
+    bcs @fail
+
+    dec file_fat_copies
+    beq @ok
+
+    clc
+    lda cf_lba
+    adc fat_sec_p_fat
+    sta cf_lba
+    lda cf_lba+1
+    adc fat_sec_p_fat+1
+    sta cf_lba+1
+    lda cf_lba+2
+    adc #0
+    sta cf_lba+2
+    lda cf_lba+3
+    adc #0
+    sta cf_lba+3
+    bra @copy_loop
+
+@ok:
+    clc
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_allocate_cluster
+
+    lda fat_fat_lba
+    sta cf_lba
+    lda fat_fat_lba+1
+    sta cf_lba+1
+    lda fat_fat_lba+2
+    sta cf_lba+2
+    lda fat_fat_lba+3
+    sta cf_lba+3
+    stz file_append_left
+    stz file_append_left+1
+    stz file_tmp_cluster
+    stz file_tmp_cluster+1
+
+@sector:
+    lda file_append_left+1
+    cmp fat_sec_p_fat+1
+    bcc @read_sector
+    beq @same_sector_count
+    jmp @no_space
+@same_sector_count:
+    lda file_append_left
+    cmp fat_sec_p_fat
+    bcc @read_sector
+    jmp @no_space
+
+@read_sector:
+    jsr cf_read_sector
+    bcc @sector_ready
+    jmp @fail
+@sector_ready:
+    lda #<sector_buffer
+    sta dir_ptr_l
+    lda #>sector_buffer
+    sta dir_ptr_h
+    ldx #0
+
+@entry:
+    lda file_tmp_cluster
+    ora file_tmp_cluster+1
+    bne @cluster_nonzero
+    jmp @next_entry
+@cluster_nonzero:
+
+    ldy #0
+    lda (dir_ptr_l),y
+    iny
+    ora (dir_ptr_l),y
+    beq @candidate_free
+    jmp @next_entry
+
+@candidate_free:
+    lda file_tmp_cluster+1
+    cmp #$FF
+    bne @free
+    lda file_tmp_cluster
+    cmp #$F0
+    bcs @next_entry
+
+@free:
+    lda file_tmp_cluster
+    sta cf_lookup_cluster
+    lda file_tmp_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_calc_cluster_lba
+    clc
+    lda cf_lba
+    adc fat_sec_p_clus
+    sta cf_lba
+    lda cf_lba+1
+    adc #0
+    sta cf_lba+1
+    lda cf_lba+2
+    adc #0
+    sta cf_lba+2
+    lda cf_lba+3
+    adc #0
+    sta cf_lba+3
+
+    lda cf_lba+3
+    cmp fat_volume_end+3
+    bcc @inside_volume
+    bne @next_entry
+    lda cf_lba+2
+    cmp fat_volume_end+2
+    bcc @inside_volume
+    bne @next_entry
+    lda cf_lba+1
+    cmp fat_volume_end+1
+    bcc @inside_volume
+    bne @next_entry
+    lda cf_lba
+    cmp fat_volume_end
+    bcc @inside_volume
+    bne @next_entry
+
+@inside_volume:
+    lda #$F8
+    sta file_fat_value
+    lda #$FF
+    sta file_fat_value+1
+    jsr cf_set_fat_entry
+    bcs @fail
+    lda file_tmp_cluster
+    sta cf_lookup_cluster
+    lda file_tmp_cluster+1
+    sta cf_lookup_cluster+1
+    clc
+    rts
+
+@next_entry:
+    inc file_tmp_cluster
+    bne @cluster_incremented
+    inc file_tmp_cluster+1
+@cluster_incremented:
+    clc
+    lda dir_ptr_l
+    adc #2
+    sta dir_ptr_l
+    bcc @pointer_ok
+    inc dir_ptr_h
+@pointer_ok:
+    inx
+    beq @sector_done
+    jmp @entry
+
+@sector_done:
+    inc file_append_left
+    bne @next_sector
+    inc file_append_left+1
+@next_sector:
+    jsr cf_inc_lba
+    jmp @sector
+
+@no_space:
+    lda #CFERR_NO_SPACE
+    sta cf_error
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_free_file_chain
+
+@next:
+    lda file_cluster
+    ora file_cluster+1
+    beq @done
+
+    lda file_cluster
+    sta file_tmp_cluster
+    sta file_append_left
+    lda file_cluster+1
+    sta file_tmp_cluster+1
+    sta file_append_left+1
+
+    lda file_tmp_cluster
+    sta cf_lookup_cluster
+    lda file_tmp_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_get_next_cluster
+    bcs @fail
+
+    lda cf_lookup_cluster
+    sta file_append_left
+    lda cf_lookup_cluster+1
+    sta file_append_left+1
+    jsr cf_cluster_status
+    cmp #1
+    beq @last
+    cmp #0
+    beq @has_next
+    lda #CFERR_BAD_FAT
+    sta cf_error
+    bra @fail
+
+@has_next:
+    lda file_append_left
+    sta file_cluster
+    lda file_append_left+1
+    sta file_cluster+1
+    bra @clear_entry
+
+@last:
+    stz file_cluster
+    stz file_cluster+1
+
+@clear_entry:
+    lda #0
+    sta file_fat_value
+    jsr cf_set_fat_entry
+    bcs @fail
+    bra @next
+
+@done:
+    clc
+    rts
+@fail:
+    lda cf_error
+    sec
+    rts
+
+.endproc
+
+
+; ==============================================================================
+; CF OPEN
+;
+; Wejście: ptr_filename, A=CF_MODE_READ/WRITE/APPEND
+; Wyjście: A=CF_FILE_HANDLE, C=0; C=1 w razie błędu
+; ==============================================================================
+.proc cf_open
+
+    sta file_mode
+    stz cf_error
+    lda cf_mounted
+    bne @mounted
+    lda #CFERR_NOT_MOUNT
+    sta cf_error
+    sec
+    rts
+
+@mounted:
+    lda file_open
+    beq @not_busy
+    lda #CFERR_BUSY
+    sta cf_error
+    sec
+    rts
+
+@not_busy:
+    lda file_mode
+    cmp #CF_MODE_APPEND+1
+    bcc @mode_ok
+    lda #CFERR_BAD_MODE
+    sta cf_error
+    sec
+    rts
+
+@mode_ok:
+    jsr cf_find_current
+    bcc @found
+
+    lda cf_error
+    cmp #CFERR_NOT_FOUND
+    bne @lookup_error
+    jmp @missing
+@lookup_error:
+    jmp @fail
+
+@found:
+    ldy #$0B
+    lda (dir_ptr_l),y
+    and #$10
+    beq @existing_file
+    lda #CFERR_NOT_FILE
+    sta cf_error
+    sec
+    rts
+
+@existing_file:
+    lda file_mode
+    beq @file_writable
+    ldy #$0B
+    lda (dir_ptr_l),y
+    and #$01
+    beq @file_writable
+    lda #CFERR_ACCESS
+    sta cf_error
+    sec
+    rts
+
+@file_writable:
+    ldy #$1A
+    lda (dir_ptr_l),y
+    sta file_cluster
+    sta file_first_cluster
+    iny
+    lda (dir_ptr_l),y
+    sta file_cluster+1
+    sta file_first_cluster+1
+    iny
+    lda (dir_ptr_l),y
+    sta file_bytes
+    iny
+    lda (dir_ptr_l),y
+    sta file_bytes+1
+    iny
+    lda (dir_ptr_l),y
+    sta file_bytes+2
+    iny
+    lda (dir_ptr_l),y
+    sta file_bytes+3
+
+    stz file_position
+    stz file_position+1
+    stz file_position+2
+    stz file_position+3
+    stz file_sector_idx
+    stz file_offset
+    stz file_offset+1
+
+    lda file_mode
+    cmp #CF_MODE_WRITE
+    beq @truncate
+    cmp #CF_MODE_APPEND
+    beq @append
+
+    jsr cf_validate_open_cluster
+    bcc @read_cluster_ok
+    jmp @fail
+@read_cluster_ok:
+    jmp @initialize
+
+@truncate:
+    lda file_cluster
+    sta file_link_cluster
+    lda file_cluster+1
+    sta file_link_cluster+1
+    stz file_first_cluster
+    stz file_first_cluster+1
+    stz file_bytes
+    stz file_bytes+1
+    stz file_bytes+2
+    stz file_bytes+3
+    stz file_position
+    stz file_position+1
+    stz file_position+2
+    stz file_position+3
+    stz file_sector_idx
+    stz file_offset
+    stz file_offset+1
+    jsr cf_update_file_dir
+    bcc @truncate_updated
+    jmp @fail
+@truncate_updated:
+    lda file_link_cluster
+    sta file_cluster
+    lda file_link_cluster+1
+    sta file_cluster+1
+    jsr cf_free_file_chain
+    bcc @chain_freed
+    jmp @fail
+@chain_freed:
+    jmp @initialize
+
+@append:
+    jsr cf_validate_open_cluster
+    bcc @append_cluster_ok
+    jmp @fail
+@append_cluster_ok:
+    lda file_bytes
+    sta file_position
+    sta file_append_left
+    lda file_bytes+1
+    sta file_position+1
+    sta file_append_left+1
+    lda file_bytes+2
+    sta file_position+2
+    sta file_append_left+2
+    lda file_bytes+3
+    sta file_position+3
+    sta file_append_left+3
+    stz file_sector_idx
+    stz file_offset
+    stz file_offset+1
+
+@seek_append:
+    lda file_append_left+3
+    ora file_append_left+2
+    bne @seek_full_sector
+    lda file_append_left+1
+    cmp #2
+    bcc @seek_done
+
+@seek_full_sector:
+    sec
+    lda file_append_left
+    sbc #0
+    sta file_append_left
+    lda file_append_left+1
+    sbc #2
+    sta file_append_left+1
+    lda file_append_left+2
+    sbc #0
+    sta file_append_left+2
+    lda file_append_left+3
+    sbc #0
+    sta file_append_left+3
+
+    inc file_sector_idx
+    lda file_sector_idx
+    cmp fat_sec_p_clus
+    bcc @seek_append
+
+    lda file_append_left
+    ora file_append_left+1
+    ora file_append_left+2
+    ora file_append_left+3
+    beq @seek_done
+
+    lda file_cluster
+    sta cf_lookup_cluster
+    lda file_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_get_next_cluster
+    bcc @fat_next_ok
+    jmp @fail
+@fat_next_ok:
+    jsr cf_cluster_status
+    cmp #0
+    beq @seek_next_cluster
+    lda #CFERR_BAD_FAT
+    sta cf_error
+    bra @fail
+
+@seek_next_cluster:
+    lda cf_lookup_cluster
+    sta file_cluster
+    lda cf_lookup_cluster+1
+    sta file_cluster+1
+    stz file_sector_idx
+    bra @seek_append
+
+@seek_done:
+    lda file_append_left
+    sta file_offset
+    lda file_append_left+1
+    and #1
+    sta file_offset+1
+    bra @initialize
+
+@missing:
+    lda file_mode
+    beq @fail
+    jsr cf_find_free_entry
+    bcs @fail
+    jsr cf_create_file_entry
+    bcs @fail
+    stz file_cluster
+    stz file_cluster+1
+    stz file_first_cluster
+    stz file_first_cluster+1
+    stz file_bytes
+    stz file_bytes+1
+    stz file_bytes+2
+    stz file_bytes+3
+    stz file_position
+    stz file_position+1
+    stz file_position+2
+    stz file_position+3
+    stz file_sector_idx
+    stz file_offset
+    stz file_offset+1
+
+@initialize:
+    stz file_buffer_valid
+    stz file_buffer_dirty
+    lda #1
+    sta file_open
+    lda #CF_FILE_HANDLE
+    clc
+    rts
+
+@fail:
+    lda cf_error
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_validate_open_cluster
+
+    lda file_cluster
+    ora file_cluster+1
+    bne @cluster_present
+    lda file_bytes
+    ora file_bytes+1
+    ora file_bytes+2
+    ora file_bytes+3
+    beq @ok
+    bra @bad_cluster
+
+@cluster_present:
+    lda file_cluster
+    sta cf_lookup_cluster
+    lda file_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_cluster_status
+    beq @ok
+@bad_cluster:
+    lda #CFERR_BAD_FAT
+    sta cf_error
+    sec
+    rts
+@ok:
+    clc
+    rts
+
+.endproc
+
+
+; ==============================================================================
+; CF CLOSE
+;
+; Wejście: X=CF_FILE_HANDLE
+; ==============================================================================
+.proc cf_close
+
+    jsr cf_validate_handle
+    bcs @fail
+    stz cf_error
+
+    lda file_mode
+    beq @close_read
+
+    jsr cf_flush_file_buffer
+    bcs @fail
+    jsr cf_update_file_dir
+    bcs @fail
+
+@close_read:
+    stz file_open
+    stz file_buffer_valid
+    stz file_buffer_dirty
+    clc
+    rts
+
+@fail:
+    lda cf_error
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_validate_handle
+
+    cpx #CF_FILE_HANDLE
+    beq @handle_number_ok
+    lda #CFERR_BAD_HANDLE
+    sta cf_error
+    sec
+    rts
+@handle_number_ok:
+    lda file_open
+    bne @ok
+    lda #CFERR_BAD_HANDLE
+    sta cf_error
+    sec
+    rts
+@ok:
+    clc
+    rts
+
+.endproc
+
+
+.proc cf_read_byte
+
+    jsr cf_validate_handle
+    bcs @fail
+    stz cf_error
+    lda file_mode
+    beq @read_mode
+    lda #CFERR_ACCESS
+    sta cf_error
+    bra @fail
+
+@read_mode:
+    lda file_position+3
+    cmp file_bytes+3
+    bcc @have_data
+    bne @eof
+    lda file_position+2
+    cmp file_bytes+2
+    bcc @have_data
+    bne @eof
+    lda file_position+1
+    cmp file_bytes+1
+    bcc @have_data
+    bne @eof
+    lda file_position
+    cmp file_bytes
+    bcc @have_data
+
+@eof:
+    lda #CFERR_EOF
+    sta cf_error
+    sec
+    rts
+
+@have_data:
+    lda file_buffer_valid
+    bne @buffer_ready
+    jsr cf_file_read_sector
+    bcs @fail
+    lda cf_lba
+    sta file_buffer_lba
+    lda cf_lba+1
+    sta file_buffer_lba+1
+    lda cf_lba+2
+    sta file_buffer_lba+2
+    lda cf_lba+3
+    sta file_buffer_lba+3
+    lda #1
+    sta file_buffer_valid
+
+@buffer_ready:
+    ldy file_offset
+    lda file_offset+1
+    beq @first_page
+    lda sector_buffer+$100,y
+    bra @got_byte
+@first_page:
+    lda sector_buffer,y
+@got_byte:
+    sta file_io_byte
+    jsr cf_advance_file_position
+    lda file_io_byte
+    clc
+    rts
+
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_write_byte
+
+    sta file_io_byte
+    jsr cf_validate_handle
+    bcs @fail
+    stz cf_error
+    lda file_mode
+    beq @read_only
+
+    jsr cf_prepare_write_buffer
+    bcs @fail
+
+    ldy file_offset
+    lda file_offset+1
+    beq @first_page
+    lda file_io_byte
+    sta sector_buffer+$100,y
+    bra @stored
+@first_page:
+    lda file_io_byte
+    sta sector_buffer,y
+
+@stored:
+    lda #1
+    sta file_buffer_dirty
+    jsr cf_advance_file_position
+
+    lda file_offset
+    ora file_offset+1
+    bne @ok
+
+    jsr cf_flush_file_buffer
+    bcs @fail
+    inc file_sector_idx
+    stz file_buffer_valid
+
+@ok:
+    clc
+    rts
+
+@read_only:
+    lda #CFERR_ACCESS
+    sta cf_error
+@fail:
+    lda cf_error
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_advance_file_position
+
+    inc file_position
+    bne @position_done
+    inc file_position+1
+    bne @position_done
+    inc file_position+2
+    bne @position_done
+    inc file_position+3
+@position_done:
+    lda file_mode
+    beq @read_position
+    lda file_position
+    sta file_bytes
+    lda file_position+1
+    sta file_bytes+1
+    lda file_position+2
+    sta file_bytes+2
+    lda file_position+3
+    sta file_bytes+3
+@read_position:
+
+    inc file_offset
+    bne @offset_check
+    inc file_offset+1
+@offset_check:
+    lda file_offset+1
+    cmp #2
+    bne @done
+    stz file_offset
+    stz file_offset+1
+    lda file_mode
+    bne @done
+    inc file_sector_idx
+    stz file_buffer_valid
+@done:
+    rts
+
+.endproc
+
+
+.proc cf_prepare_write_buffer
+
+    lda file_offset
+    ora file_offset+1
+    bne @ensure_sector
+    lda file_buffer_dirty
+    beq @ensure_sector
+    jsr cf_flush_file_buffer
+    bcs @fail
+    inc file_sector_idx
+    stz file_buffer_valid
+
+@ensure_sector:
+    jsr cf_ensure_write_sector
+    bcs @fail
+    lda file_buffer_valid
+    bne @ok
+
+    lda file_offset
+    ora file_offset+1
+    beq @new_sector
+    jsr cf_file_read_sector
+    bcs @fail
+    bra @cache_lba
+
+@new_sector:
+    jsr cf_calculate_file_sector_lba
+    bcs @fail
+    ldx #0
+    lda #0
+@clear_first:
+    sta sector_buffer,x
+    sta sector_buffer+$100,x
+    inx
+    bne @clear_first
+
+@cache_lba:
+    lda cf_lba
+    sta file_buffer_lba
+    lda cf_lba+1
+    sta file_buffer_lba+1
+    lda cf_lba+2
+    sta file_buffer_lba+2
+    lda cf_lba+3
+    sta file_buffer_lba+3
+    lda #1
+    sta file_buffer_valid
+    stz file_buffer_dirty
+@ok:
+    clc
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_ensure_write_sector
+
+    lda file_cluster
+    ora file_cluster+1
+    bne @check_sector
+    jsr cf_allocate_cluster
+    bcc @first_cluster_allocated
+    jmp @fail
+@first_cluster_allocated:
+    lda cf_lookup_cluster
+    sta file_cluster
+    sta file_first_cluster
+    lda cf_lookup_cluster+1
+    sta file_cluster+1
+    sta file_first_cluster+1
+    stz file_sector_idx
+    stz file_buffer_valid
+    jmp @ok
+
+@check_sector:
+    lda file_sector_idx
+    cmp fat_sec_p_clus
+    bcc @ok
+
+    lda file_cluster
+    sta cf_lookup_cluster
+    lda file_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_get_next_cluster
+    bcc @write_fat_next_ok
+    jmp @fail
+@write_fat_next_ok:
+    jsr cf_cluster_status
+    cmp #0
+    beq @existing_next
+    cmp #1
+    beq @allocate_next
+    lda #CFERR_BAD_FAT
+    sta cf_error
+    bra @fail
+
+@existing_next:
+    lda cf_lookup_cluster
+    sta file_cluster
+    lda cf_lookup_cluster+1
+    sta file_cluster+1
+    stz file_sector_idx
+    stz file_buffer_valid
+    bra @ok
+
+@allocate_next:
+    lda file_cluster
+    sta file_link_cluster
+    lda file_cluster+1
+    sta file_link_cluster+1
+    jsr cf_allocate_cluster
+    bcs @fail
+    lda cf_lookup_cluster
+    sta file_fat_value
+    lda cf_lookup_cluster+1
+    sta file_fat_value+1
+    lda file_link_cluster
+    sta file_tmp_cluster
+    lda file_link_cluster+1
+    sta file_tmp_cluster+1
+    jsr cf_set_fat_entry
+    bcs @fail
+    lda file_fat_value
+    sta file_cluster
+    lda file_fat_value+1
+    sta file_cluster+1
+    stz file_sector_idx
+    stz file_buffer_valid
+@ok:
+    clc
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_calculate_file_sector_lba
+
+    lda file_cluster
+    sta cf_lookup_cluster
+    lda file_cluster+1
+    sta cf_lookup_cluster+1
+    jsr cf_calc_cluster_lba
+    clc
+    lda cf_lba
+    adc file_sector_idx
+    sta cf_lba
+    bcc @done
+    inc cf_lba+1
+    bne @done
+    inc cf_lba+2
+    bne @done
+    inc cf_lba+3
+@done:
+    clc
+    rts
+
+.endproc
+
+
+.proc cf_flush_file_buffer
+
+    lda file_buffer_dirty
+    beq @ok
+    lda file_buffer_lba
+    sta cf_lba
+    lda file_buffer_lba+1
+    sta cf_lba+1
+    lda file_buffer_lba+2
+    sta cf_lba+2
+    lda file_buffer_lba+3
+    sta cf_lba+3
+    jsr cf_write_sector
+    bcs @fail
+    stz file_buffer_dirty
+@ok:
+    clc
+    rts
+@fail:
+    sec
+    rts
+
+.endproc
+
+
+.proc cf_delete
+
+    lda file_open
+    beq @not_busy
+    lda #CFERR_BUSY
+    sta cf_error
+    sec
+    rts
+@not_busy:
+    lda cf_mounted
+    bne @mounted
+    lda #CFERR_NOT_MOUNT
+    sta cf_error
+    sec
+    rts
+@mounted:
+    jsr cf_find_current
+    bcs @fail
+    ldy #$0B
+    lda (dir_ptr_l),y
+    and #$10
+    beq @regular_file
+    lda #CFERR_NOT_FILE
+    sta cf_error
+    bra @fail
+@regular_file:
+    ldy #$1A
+    lda (dir_ptr_l),y
+    sta file_cluster
+    iny
+    lda (dir_ptr_l),y
+    sta file_cluster+1
+    jsr cf_delete_file_entry
+    bcs @fail
+    jsr cf_free_file_chain
+    bcs @fail
+    clc
+    rts
+@fail:
+    lda cf_error
     sec
     rts
 
@@ -3248,4 +4854,3 @@ loader_irq:
     jsr spinner_update
 loader_irq_complete:
     jmp bios_return_from_irq
-
