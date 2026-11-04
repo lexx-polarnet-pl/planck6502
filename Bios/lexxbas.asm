@@ -27,15 +27,15 @@ RAMSTART2   := $0600
 
 .segment "KERNAL"
 MONCOUT := bios_print_char
-MONRDKEY:
+MONRDKEY: 
 mon_loop:
     jsr get_key
     cmp #$00         ; nic nie wciśnięte, czekaj
     beq mon_loop
 	jsr print_char
-    cmp #$0A         ; jeśli LF (Enter z keymap)
-    bne not_lf
-    lda #$0D         ; zamień na CR
+    ;cmp #$0A         ; jeśli LF (Enter z keymap)
+    ;bne not_lf
+    ;lda #$0D         ; zamień na CR
 not_lf:
     rts
 

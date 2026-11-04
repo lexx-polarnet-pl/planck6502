@@ -2,10 +2,109 @@ SYS_CTRL_STAT     = MEGA_CONSOLE_PORT + $F   ; System Status & Control Register
 RNG_DATA          = MEGA_CONSOLE_PORT + $E   ; Random Number Generator Data Register
 
 ; Maski bitowe dla odczytu statusu
-MASK_KBD_PRESENT   = %00010000   ; Bit 4: Klawiatura podłączona
-MASK_MOUSE_PRESENT = %00100000   ; Bit 5: Mysz podłączona
+MASK_KBD_PRESENT   = %00100000   ; Bit 5: Klawiatura podłączona
+MASK_MOUSE_PRESENT = %01000000   ; Bit 6: Mysz podłączona
+KB_BUFFER_MASK = $3F
+KB_BUFFER_CAPACITY = $40
+ 
+.segment "BIOS_VECTORS" ; $0200
+kb_wptr: .res 1
+kb_rptr: .res 1
 
 .segment "KERNAL"
+
+get_key:
+        php
+        jsr get_key_standard
+        ; to jest fragment z getkey simple
+        ; --- 1. Filtrowanie: odrzuć wszystko >= $80 ---
+        CMP #$80
+        BCS return_zero         ; Jeśli bajt >= $80, skocz do zwrotu zera
+        ; --- 2. Konwersja na UPPERCASE (tylko dla 'a'..'z') ---
+        CMP #'a'                ; Czy znak jest mniejszy niż 'a' ($61)?
+        BCC get_key_done        ; Jeśli < 'a' (kody sterujące, cyfry, symbole, 'A'-'Z') -> bez zmian
+        CMP #'z' + 1            ; Czy znak jest większy niż 'z' ($7A)?
+        BCS get_key_done        ; Jeśli > 'z' -> bez zmian
+        AND #$DF                ; Zamiana 'a'..'z' na 'A'..'Z' (zerowanie bitu 5)
+        jmp get_key_done        ; Zwróć przetworzony znak ASCII ($00..$7F)
+
+return_zero:
+        LDA #$00                ; Zwróć 0 dla znaków spoza podstawowego ASCII (>= $80)
+
+get_key_done:
+        plp
+        RTS
+
+get_key_standard:
+	php        ; save processor status FIRST
+        phx
+        sei
+        lda kb_rptr
+        cmp kb_wptr
+        bne key_pressed
+	lda #$00
+	jmp return_from_get_key
+key_pressed:
+        lda kb_rptr
+        and #KB_BUFFER_MASK
+        tax
+        lda kb_buffer, x
+        inc kb_rptr
+        pha
+        jsr kb_buffer_size
+        cmp #KB_BUFFER_CAPACITY
+        bcs return_from_get_key
+        lda ACIA1_CMD
+        ora #%00001000          ; ustaw bit DTR
+        sta ACIA1_CMD    
+        pla
+return_from_get_key:
+        plx
+        plp  
+        rts
+
+clear_kb_buffer:
+        lda #$00
+        sta kb_wptr
+        sta kb_rptr
+        rts
+
+
+mega_console_keyboard_irq:
+        ;LDA #'M'
+        ;STA GPU_PORT
+        LDA MEGA_CONSOLE_PORT
+
+	pha
+	jsr kb_buffer_size
+	cmp #KB_BUFFER_CAPACITY
+	bcs discard_mega_console_char
+	lda kb_wptr
+	and #KB_BUFFER_MASK
+	tax
+	pla
+	sta kb_buffer, x
+	inc kb_wptr
+	jsr kb_buffer_size
+	cmp #KB_BUFFER_CAPACITY
+	bcc bfr_not_full
+bfr_buffer_full:
+	lda ACIA1_CMD
+  	;and #%11111110          ; skasuj bit DTR
+	and #%11110111          ; skasuj bit DTR
+  	sta ACIA1_CMD	
+bfr_not_full:	
+	rts
+
+discard_mega_console_char:
+	pla
+	jmp bfr_buffer_full
+
+kb_buffer_size:
+	lda kb_wptr
+	sec
+	sbc kb_rptr
+	rts
 
 print_char:
         cmp #7                  ; Sprawdź, czy znak w akumulatorze (A) to ASCII 7 (BEL)

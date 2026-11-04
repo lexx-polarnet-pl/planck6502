@@ -11,20 +11,20 @@ PLANCK_SLOT_5 = $FFD0
 PLANCK_SLOT_6 = $FFE0
 
 GPU_PORT = PLANCK_SLOT_0
-KEY_PORT = PLANCK_SLOT_1
+;KEY_PORT = PLANCK_SLOT_1
 SOUND_CARD_PORT = PLANCK_SLOT_2
 CF_CARD_PORT = PLANCK_SLOT_3
 MEM_CARD_PORT = PLANCK_SLOT_4
 MEGA_CONSOLE_PORT = PLANCK_SLOT_5
 SERIAL_PORT = PLANCK_SLOT_6
 
-VIA1_PORTB = KEY_PORT
-VIA1_PORTA = KEY_PORT + 1
-VIA1_DDRB = KEY_PORT + 2
-VIA1_DDRA = KEY_PORT + 3
-VIA1_PCR = KEY_PORT + $C ; Peripheral Control Registe
-VIA1_IFR = KEY_PORT + $D  ; Interrupt Flag Register
-VIA1_IER = KEY_PORT + $E ; Interrupt Enable Register
+;VIA1_PORTB = KEY_PORT
+;VIA1_PORTA = KEY_PORT + 1
+;VIA1_DDRB = KEY_PORT + 2
+;VIA1_DDRA = KEY_PORT + 3
+;VIA1_PCR = KEY_PORT + $C ; Peripheral Control Register
+;VIA1_IFR = KEY_PORT + $D  ; Interrupt Flag Register
+;VIA1_IER = KEY_PORT + $E ; Interrupt Enable Register
 
 
 ACIA1_DATA       = SERIAL_PORT
@@ -73,7 +73,6 @@ reset:
 	lda #'E'
 	sta GPU_PORT
 
-	jsr init_io
 	lda #'X'
 	sta GPU_PORT
 
@@ -90,19 +89,25 @@ clear_ram:
     iny
     bne clear_ram
 
+	jsr init_io
+	jsr clear_kb_buffer
 	cli
 	;jmp loop ; for loopback tests
 
 	jsr coursor_off
 	jsr print_welcome
 	jsr init_sound_card
-	jsr post_mem_test
+	;jsr post_mem_test
+	jsr post_mem_test_short
 	jsr check_input_devices	
 	jsr cf_init_and_mount
 	jsr display_date_time
 	jsr new_line
 	cli
-	jsr clear_kb_buffer
+	;jsr clear_kb_buffer
+	; Mega console setup - card is slow so we do it here - it's to enable interrupts on keyboard
+	LDA #$81
+	STA SYS_CTRL_STAT
 	jsr coursor_on
 	
 	jmp SHELL_INIT
@@ -145,20 +150,24 @@ endless_loader:
 ; setup all IO, basically resets to defaults
 init_io:
 
-    lda #%01111111 ; first, disable all interrupts
-	sta VIA1_IER
-	lda #%11111111 ; clear any pending VIA interrupt flags before re-enabling
-	sta VIA1_IFR
+    ;lda #%01111111 ; first, disable all interrupts
+	;sta VIA1_IER
+	;lda #%11111111 ; clear any pending VIA interrupt flags before re-enabling
+	;sta VIA1_IFR
 
 	;lda #%10100001 ; pulse output for VIA port B CB2 pin, and VIA port A CA1 positive active edge
-	lda #%00000001 ; VIA port A CA1 positive active edge
-	sta VIA1_PCR
+	;lda #%00000001 ; VIA port A CA1 positive active edge
+	;sta VIA1_PCR
 
 
-	lda #%11111111 ; Set all pins on port B to output
-	sta VIA1_DDRB
-	sta VIA1_PORTB ; Set port B to high
+	;lda #%11111111 ; Set all pins on port B to output
+	;sta VIA1_DDRB
+	;sta VIA1_PORTB ; Set port B to high
+	; Mega console setup
+	LDA #$81
+	STA SYS_CTRL_STAT
 
+	; ACIA (Serial) setup
 	LDA     #%00011111          ; 8-N-1, 19200 bps
 	;LDA    	#%00011110         	; 8-N-1, 9600 baud
 	;lda 	#%00011100         	; 8-N-1, 4800 baud
@@ -168,7 +177,7 @@ init_io:
 	;LDA     #%10001011            ; No parity, no echo, no rx interrupts.
 	STA     ACIA1_CMD
 
-	jsr init_keyboard
+	;jsr init_keyboard
 	rts
 
 init_vectors:
@@ -188,7 +197,7 @@ print_welcome:
 
 .include "bios_console.asm"
 .include "bios_utils.asm"
-.include "bios_keyboard.asm"	
+;.include "bios_keyboard.asm"	
 .include "bios_interrupts.asm"
 .include "bios_filesys.asm"  
 .include "bios_command.asm" 
@@ -231,7 +240,18 @@ bios_bell:
 	jmp opl_error_gong
 bios_get_random_number:
 	jmp GET_RANDOM
-
+bios_cf_open:
+	jmp cf_open
+bios_cf_close:
+	jmp cf_close
+bios_cf_delete:
+	jmp cf_delete
+bios_cf_read_byte:
+	jmp cf_read_byte
+bios_cf_write_byte:
+	jmp cf_write_byte
+bios_get_key_standard:
+	jmp get_key_standard
 ret_from_irq:
 	rti
 

@@ -1,105 +1,7 @@
 .segment "KERNAL"
-; check_via1_irq - sprawdza IFR VIA1 i wywołuje handler dla CA1 (keyboard_interrupt)
-; Zachowuje rejestry: A, X, Y (przydatne gdy wywoływane w przerwaniu).
-; Nie czyści IFR/IER — zrób to w handlerach jeśli potrzebne.
-
-check_via1_irq:
-	; --------- zachowaj A, X, Y na stosie ---------
-	php
-	pha                 ; push A
-
-	; --- sprawdź CA2 (bit0) ---
-	lda VIA1_IFR
-	and #%00000001      ; maska bit0 = CA2
-	beq chk_ca1
-	; --- odkomentuj jeśli potrzebujesz ---
-	; po handlerze możemy chcieć czyścić IFR/IER — tu zostawiamy to Tobie
-	;jmp restore_regs   ; po obsłudze wracamy (przywracamy rejestry)
-
-chk_ca1:
-	lda VIA1_IFR
-	and #%00000010      ; bit1 = CA1
-	beq chk_sr
-	jsr keyboard_interrupt
-	lda #%00000010      ; acknowledge CA1 IRQ flag in VIA IFR
-	sta VIA1_IFR
-	jmp restore_regs
-
-chk_sr:
-	lda VIA1_IFR
-	and #%00000100      ; bit2 = shift register
-	beq chk_cb2
-	; --- odkomentuj jeśli potrzebujesz ---
-	; jsr cb1_interrupt_handler
-	; jmp .restore_regs
-
-chk_cb2:
-	lda VIA1_IFR
-	and #%00001000      ; bit3 = CB2
-	beq chk_cb1
-	; --- odkomentuj jeśli potrzebujesz ---
-	; jsr cb2_interrupt_handler
-	; jmp .restore_regs
-
-chk_cb1:
-	lda VIA1_IFR
-	and #%00010000      ; bit4 = CB1
-	beq chk_t2
-	; --- odkomentuj jeśli potrzebujesz ---
-	;jsr loader_isr
-	;jmp restore_regs
-
-chk_t2:
-	lda VIA1_IFR
-	and #%00100000      ; bit5 = Timer2
-	beq chk_t1
-	; --- odkomentuj jeśli potrzebujesz ---
-	; jsr timer1_interrupt_handler
-	; jmp .restore_regs
-
-chk_t1:
-	lda VIA1_IFR
-	and #%01000000      ; bit6 = Timer1
-	beq no_via1_irq
-	; --- odkomentuj jeśli potrzebujesz ---
-	; jsr timer2_interrupt_handler
-	; jmp .restore_regs
-
-no_via1_irq:
-	; brak rozpoznanego/obsłużonego źródła u VIA1
-	; (możesz tu dodać logowanie, czyszczenie flag lub inne działania)
-
-restore_regs:
-	pla                 ; przywróć A
-	plp	
-	;rti                 
-	rts
-
-; ===== przykładowe miejsca dla handlerów (zakomentowane) =====
-; keyboard_interrupt:
-;    ; obsługa CA1 (np. klawiatura)
-;    rts
-;
-; ca2_interrupt_handler:
-;    rts
-;
-; cb1_interrupt_handler:
-;    rts
-;
-; cb2_interrupt_handler:
-;    rts
-;
-; shift_interrupt_handler:
-;    rts
-;
-; timer1_interrupt_handler:
-;    rts
-;
-; timer2_interrupt_handler:
-;    rts
 
 ; =====================================================
-; irq_handler – wspólny IRQ dla VIA + ACIA
+; irq_handler – wspólny IRQ wszystkich urządzeń
 ; =====================================================
 irq_handler:
     pha
@@ -107,23 +9,29 @@ irq_handler:
     phy
 
 ; -----------------------------------------------------
-; 1. Sprawdź ACIA
+; 1. Sprawdź ACIA (jest najszybsza)
 ; -----------------------------------------------------
     lda ACIA1_STATUS
     and #%10000000        ; bit7 = IRQ flag
-    beq chk_via1
+    beq chk_mega_console
     ;jmp acia_irq          ; bit7=1 → IRQ z ACIA
 	jmp (bios_vectors_acia1_irq) ; skok do wektora ACIA IRQ
 
 ; -----------------------------------------------------
-; 2. Sprawdź VIA
+; 2. Sprawdź Mega console
 ; -----------------------------------------------------
-chk_via1:
-    lda VIA1_IFR
-    and #%01111111        ; ignoruj bit7 (global IRQ)
+chk_mega_console:
+    lda SYS_CTRL_STAT
+    and #%00000001        ; bit0 = Keyboard IRQ flag
     beq irq_done          ; brak źródła → wyjście
-    jsr check_via1_irq    ; Twoja istniejąca logika VIA
+    jsr mega_console_keyboard_irq
     jmp irq_done
+
+irq_done:
+    ply
+    plx
+    pla
+    rti
 
 ; -----------------------------------------------------
 ; ACIA IRQ
@@ -149,13 +57,10 @@ chk_ctrl:
     and #%01100000        ; DCD / CTS
     beq irq_done
     ; jsr acia_ctrl_handler ; <<< OPCJONALNE
+    jmp irq_done
 
 ; -----------------------------------------------------
-irq_done:
-    ply
-    plx
-    pla
-    rti
+
 
 acia_rx_handler:
 	lda ACIA1_DATA         	; read char from ACIA
@@ -188,9 +93,11 @@ acia_tx_handler:
 	rts
 
 
+
+
+
+
+
 nmi:
 	; obsługa NMI (jeśli potrzebna)
-	lda VIA1_PORTB
-	EOR #$FF
-	sta VIA1_PORTB 	
 	rti
