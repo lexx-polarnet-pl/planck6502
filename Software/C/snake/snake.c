@@ -106,7 +106,7 @@ void draw_game_field() {
     // Print the score and instructions
     //print_str("score = %d", score); TODO
     simple_printf("\x1B[%d;3HScore:",HEIGHT+3);
-    simple_printf("\x1B[%d;50HPress W, A, S, D for movement.",HEIGHT+3);
+    simple_printf("\x1B[%d;50HUse arrow keys for movement.",HEIGHT+3);
     print_score();
     print_food();
 }
@@ -142,19 +142,19 @@ void input() {
     //print_char(tolower(getch());
     //if (kbhit()) {
         switch (getch()) {
-        case 'A':
+        case 0xE2: // Left arrow key
             if(key!=2)
             key = 1;
             break;
-        case 'D':
+        case  0xE3: // Right arrow key
             if(key!=1)
             key = 2;
             break;
-        case 'W':
+        case 0xE0: // Up arrow key
             if(key!=4)
             key = 3;
             break;
-        case 'S':
+        case 0xE1: // Down arrow key
             if(key!=3)
             key = 4;
             break;
