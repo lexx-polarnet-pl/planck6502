@@ -524,6 +524,15 @@ bool keyboard_is_present()
     return kbd_present;
 }
 
+bool keyboard_has_data()
+{
+    const uint8_t saved_sreg = SREG;
+    cli();
+    const bool has_data = kbd_has_data();
+    SREG = saved_sreg;
+    return has_data;
+}
+
 void keyboard_poll()
 {
     if (!keyboard_leds_pending || !kbd_present) {

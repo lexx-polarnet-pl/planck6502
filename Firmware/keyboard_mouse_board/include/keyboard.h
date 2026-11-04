@@ -6,6 +6,7 @@
 void keyboard_init();
 void keyboard_poll();
 bool keyboard_is_present();
+bool keyboard_has_data();
 void kbd_push_string(const char* str);
 uint8_t keyboard_read_data();
 uint8_t keyboard_read_control();

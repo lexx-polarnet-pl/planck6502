@@ -113,7 +113,8 @@ kody `0xE0`–`0xE9`. Operatory `+`, `-`, `*` i `/` pozostają znakami ASCII.
 NVRAM wykorzystuje adresowanie pośrednie:
 1. Zapisz adres bajtu (0–255) do `NVRAM_ADDR` (`BASE + $C`).
 2. Odczytaj/zapisz dane w `NVRAM_DATA` (`BASE + $D`).
-3. Jeśli w `SYS_CTRL_STAT` włączono bit `AUTO_INC_NVRAM`, odczyt lub zapis do `NVRAM_DATA` automatycznie zwiększy `NVRAM_ADDR` o 1.
+3. `NVRAM_ADDR` nie zwiększa się automatycznie; w razie potrzeby program 6502
+   powinien sam zmienić adres.
 
 ---
 
@@ -130,23 +131,28 @@ Układ wykorzystuje mieszaną entropię sprzętową i czasową:
 ### Kontrola Systemu i Przerwań (`BASE + $F`)
 
 #### Zapis do `SYS_CTRL_STAT` (Konfiguracja):
-- **Bit 0**: `AUTO_INC_NVRAM` (1 = Automatyczna inkrementacja adresu NVRAM przy odczycie/zapisie danych)
-- **Bit 1**: `KBD_IRQEN` (1 = Generuj przerwanie `/IRQ` dla 6502 gdy bufor klawiatury jest niepusty)
-- **Bit 2**: `MOUSE_IRQEN` (1 = Generuj przerwanie `/IRQ` dla 6502 przy ruchu/kliknięciu myszy)
-- **Bit 3**: `RTC_IRQEN` (1 = Generuj przerwanie `/IRQ` dla 6502 przy tyknięciu zegara 1 Hz / Alarmie)
-- **Bit 7**: `GLOBAL_IRQEN` (1 = Zezwól na wyzwalanie linii `/IRQ` procesora 6502)
+- **Bit 0**: `IRQ_KBD_DATA_EN` (zezwolenie na IRQ, gdy FIFO klawiatury nie jest puste)
+- **Bit 1**: `IRQ_MOUSE_EN` (zarezerwowany; IRQ myszy nie jest jeszcze obsługiwane)
+- **Bit 2**: `IRQ_RTC_TICK_EN` (zarezerwowany dla RTC)
+- **Bit 3**: `IRQ_RES1` (rezerwa)
+- **Bit 4**: `IRQ_RES2` (rezerwa)
+- **Bity 5–6**: `NA` (nieużywane)
+- **Bit 7**: `IRQ_GLOBAL_EN` (zezwolenie na aktywację fizycznej linii `/IRQ`)
 
 #### Odczyt z `SYS_CTRL_STAT` (Status IRQ):
-- **Bit 0**: `RTC_IRQ_PENDING`
-- **Bit 1**: `KBD_IRQ_PENDING`
-- **Bit 2**: `MOUSE_IRQ_PENDING`
-- **Bit 4**: `KBD_PRESENT` (1 = klawiatura wykryta podczas inicjalizacji)
-- **Bit 5**: `MOUSE_PRESENT` (1 = mysz wykryta i poprawnie zainicjalizowana)
-- **Bit 7**: `IRQ_ACTIVE` (1 = Linia `/IRQ` jest obecnie w stanie niskim)
+- **Bit 0**: `IRQ_KBD_DATA` (FIFO klawiatury nie jest puste)
+- **Bit 1**: `IRQ_MOUSE` (zarezerwowany; obecnie zawsze 0)
+- **Bit 2**: `IRQ_RTC_TICK` (zarezerwowany; obecnie zawsze 0)
+- **Bity 3–4**: `RES1`, `RES2` (rezerwa)
+- **Bit 5**: `KB_DETECT` (klawiatura wykryta)
+- **Bit 6**: `MOUSE_DETECT` (mysz wykryta)
+- **Bit 7**: `IRQ_ACTIVE` (co najmniej jedno aktywne źródło jest włączone)
 
-Aktualna obsługa odczytu `SYS_CTRL_STAT` zwraca bity `KBD_PRESENT` i
-`MOUSE_PRESENT`; pozostałe bity odczytu są obecnie zerowe. Zapis do tego
-rejestru nie jest jeszcze obsługiwany.
+Linia `/IRQ` na PB2 jest aktywna stanem niskim i jest wysterowana wyłącznie,
+gdy `IRQ_GLOBAL_EN` oraz co najmniej jedno włączone źródło IRQ jest aktywne.
+Dla klawiatury `IRQ_KBD_DATA` pozostaje ustawione, dopóki FIFO zawiera dane;
+odczyt ostatniego bajtu automatycznie je zeruje. Zapis `$81` włącza IRQ
+klawiatury i globalne wyjście. Pozostałe źródła są na razie placeholderami.
 
 ---
 
@@ -189,17 +195,15 @@ GET_RANDOM:
 ; Odczyt bloku 16 bajtów z NVRAM (EEPROM)
 ; ------------------------------------------------------------------------------
 READ_CONFIG_BLOCK:
-    LDA #$01
-    STA SYS_CTRL_STAT   ; Włącz AUTO_INC_NVRAM (bit 0)
-    
     LDA #$00
     STA NVRAM_ADDR      ; Ustaw adres początkowy NVRAM na $00
 
     LDX #$00
 .LOOP:
-    LDA NVRAM_DATA      ; Odczytaj bajt (NVRAM_ADDR zwiększy się automatycznie)
+    LDA NVRAM_DATA      ; Odczytaj bajt spod wskazanego adresu
     STA $0200, X        ; Zapisz do RAM 6502
     INX
+    STX NVRAM_ADDR      ; Ustaw adres następnego bajtu
     CPX #$10            ; Odczytaj 16 bajtów
     BNE .LOOP
     RTS

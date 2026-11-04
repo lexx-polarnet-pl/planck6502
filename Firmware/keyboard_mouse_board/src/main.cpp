@@ -11,8 +11,15 @@ static uint8_t nvram_address = 0;
 static bool message_output_enabled = false;
 static bool error_output_enabled = false;
 
-constexpr uint8_t SYS_CTRL_STAT_KEYBOARD_PRESENT = 1 << 4;
-constexpr uint8_t SYS_CTRL_STAT_MOUSE_PRESENT = 1 << 5;
+constexpr uint8_t SYS_CTRL_IRQ_KBD_DATA = 1 << 0;
+constexpr uint8_t SYS_CTRL_KEYBOARD_PRESENT = 1 << 5;
+constexpr uint8_t SYS_CTRL_MOUSE_PRESENT = 1 << 6;
+constexpr uint8_t SYS_CTRL_IRQ_ACTIVE = 1 << 7;
+constexpr uint8_t SYS_CTRL_IRQ_GLOBAL_EN = 1 << 7;
+constexpr uint8_t SYS_CTRL_IRQ_MASK = 0x87;
+constexpr uint8_t SYS_CTRL_IRQ_SOURCE_MASK = 0x07;
+
+static uint8_t irq_mask = 0;
 
 uint8_t loopback = 0x55;
 
@@ -83,6 +90,41 @@ static inline void rdyStrobe()
     PORTB |= _BV(PIN_RDY_STROBE);
 }
 
+static uint8_t update_irq_state()
+{
+    uint8_t status = 0;
+    if (keyboard_has_data())
+    {
+        status |= SYS_CTRL_IRQ_KBD_DATA;
+    }
+
+    uint8_t active_sources = status & irq_mask & SYS_CTRL_IRQ_SOURCE_MASK;
+    if (active_sources != 0)
+    {
+        status |= SYS_CTRL_IRQ_ACTIVE;
+    }
+
+    if (active_sources != 0 && (irq_mask & SYS_CTRL_IRQ_GLOBAL_EN) != 0)
+    {
+        PORTB &= ~_BV(PIN_IRQ);
+    }
+    else
+    {
+        PORTB |= _BV(PIN_IRQ);
+    }
+
+    if (keyboard_is_present())
+    {
+        status |= SYS_CTRL_KEYBOARD_PRESENT;
+    }
+    if (mouse_is_present())
+    {
+        status |= SYS_CTRL_MOUSE_PRESENT;
+    }
+
+    return status;
+}
+
 // ============================================================================
 // SETUP
 // ============================================================================
@@ -92,8 +134,8 @@ void setup()
 
     // Konfiguracja linii CS, RW, RDY
     DDRB &= ~(_BV(PIN_CS) | _BV(PIN_RW));
-    DDRB |= _BV(PIN_RDY_STROBE);
-    PORTB |= _BV(PIN_CS) | _BV(PIN_RW) | _BV(PIN_RDY_STROBE);
+    DDRB |= _BV(PIN_IRQ) | _BV(PIN_RDY_STROBE);
+    PORTB |= _BV(PIN_CS) | _BV(PIN_RW) | _BV(PIN_IRQ) | _BV(PIN_RDY_STROBE);
 
     // Konfiguracja adresów A0-A3 (PC0-PC3)
     DDRC &= ~(0x0F);
@@ -126,6 +168,7 @@ void loop()
     {
         keyboard_poll();
         mouse_poll();
+        update_irq_state();
         return;
     }
 
@@ -183,16 +226,7 @@ void loop()
 
             case 0x0F: // SYS_CTRL_STAT (BASE + $F)
             {
-                uint8_t status = 0;
-                if (keyboard_is_present())
-                {
-                    status |= SYS_CTRL_STAT_KEYBOARD_PRESENT;
-                }
-                if (mouse_is_present())
-                {
-                    status |= SYS_CTRL_STAT_MOUSE_PRESENT;
-                }
-                dataBusOutput(status);
+                dataBusOutput(update_irq_state());
                 break;
             }
 
@@ -230,9 +264,14 @@ void loop()
             case 0x0D: // NVRAM_DATA (BASE + $D)
                 nvram_write(nvram_address, data_in);
                 break;
+
+            case 0x0F: // SYS_CTRL_STAT (BASE + $F): IRQ_MASK
+                irq_mask = data_in & SYS_CTRL_IRQ_MASK;
+                break;
         }
     }
 
+    update_irq_state();
     //delayMicroseconds(100);
     rdyStrobe();
 }

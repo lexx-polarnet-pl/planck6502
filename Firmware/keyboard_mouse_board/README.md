@@ -14,7 +14,7 @@ In default mode, all PS/2 keyboard decoding is processed by the ATmega, allowing
 * **Real-Time Clock (RTC)**: Integrated DS1307+ RTC using BCD registers with automatic startup timestamping. (working)
 * **Non-Volatile RAM**: Indirectly addressed 256-byte EEPROM with optional auto-increment. (not yet working)
 * **PRNG/TRNG**: Hardware random number generator using **Xorshift32** seeded with RTC and hardware timer (`Timer1`) input entropy. (not yet working)
-* **Interrupt Controller**: Configurable `/IRQ` line generation for system events. (not yet working)
+* **Interrupt Controller**: Configurable active-low `/IRQ` line for keyboard FIFO data; mouse and RTC IRQs are reserved.
 
 ---
 
@@ -23,16 +23,23 @@ In default mode, all PS/2 keyboard decoding is processed by the ATmega, allowing
 | Offset | Symbol | R/W | Function |
 | :---: | :--- | :---: | :--- |
 | `+$0` | `KBD_DATA` | **R** | Pop next ASCII/Scan Code from FIFO |
-| `+$1` | `KBD_CTRL` | **R/W** | Mode selection (0: ASCII, 1: Raw) & Read LED states |
-| `+$2` | `KBD_STAT` | **R** | `DATA_READY`, FIFO overflow, and modifier states (Shift/Ctrl/Alt) |
-| `+$3` | `MOUSE_X` | **R** | Relative $\Delta X$ or absolute position |
-| `+$4` | `MOUSE_Y` | **R** | Relative $\Delta Y$ or absolute position |
-| `+$5` | `MOUSE_BTN` | **R** | Button states (L/R/M) & 3-bit scroll wheel delta |
+| `+$1` | `KBD_STAT` | **R/W** | Mode selection (0: ASCII, 1: Raw) & Read LED states |
+| `+$2` | `KBD_CTRL` | **R** | `DATA_READY`, FIFO overflow, and modifier states (Shift/Ctrl/Alt) |
+| `+$3` | `MOUSE_DX` | **R** | Relative $\Delta X$ or absolute position |
+| `+$4` | `MOUSE_DY` | **R** | Relative $\Delta Y$ or absolute position |
+| `+$5` | `MOUSE_STATE` | **R** | Button states (L/R/M) & 3-bit scroll wheel delta |
 | `+$6`–`+$B` | `RTC_*` | **R/W** | Time/Date in BCD format (Sec, Min, Hour, Day, Month, Year) |
 | `+$C` | `NVRAM_ADDR` | **R/W** | EEPROM byte address pointer (0–255) |
 | `+$D` | `NVRAM_DATA` | **R/W** | Read/Write EEPROM cell (auto-increments if enabled) |
-| `+$E` | `RNG_DATA` | **R/W** | Read: 8-bit random byte / Write: Inject manual seed |
-| `+$F` | `SYS_CTRL_STAT` | **R/W** | Read: Device detection & IRQ flags / Write: IRQ masks & auto-inc enable |
+| `+$E` | `RND_DATA` | **R** | Read: 8-bit random byte  |
+| `+$F` | `SYS_CTRL_STAT` | **R/W** | Read: IRQ status & device detection / Write: IRQ masks |
+
+`SYS_CTRL_STAT` read bits: bit 0 keyboard FIFO non-empty, bits 5/6 keyboard/mouse
+detection, bit 7 an enabled IRQ source is active. Write bits 0/1/2 enable
+keyboard/mouse/RTC IRQ sources; bit 7 enables the physical `/IRQ` output.
+Keyboard IRQ remains asserted while the FIFO is non-empty and clears after its
+last byte is read. For keyboard IRQ, write `$81` to enable the keyboard source
+and global output.
 
 ---
 
