@@ -206,6 +206,118 @@ post_mem_test:
         plp
         rts
 
+post_mem_test_short:
+        php
+        sei
+        
+        lda #<msg_detect_card
+        ldy #>msg_detect_card
+        jsr print_str
+
+        stz bios_mem_config
+        stz MEM_CARD_PORT
+
+        lda $8000
+        sta Z2
+
+        lda #$80
+        sta MEM_CARD_PORT
+        lda Z2
+        eor #$FF
+        sta $8000
+
+        stz MEM_CARD_PORT
+        lda $8000
+        cmp Z2
+        beq @short_no_card_skip
+        jmp @short_no_card
+@short_no_card_skip:
+
+        lda #$80
+        sta MEM_CARD_PORT
+        lda $8000
+        eor Z2
+        cmp #$FF
+        beq @short_no_card_skip2
+        jmp @short_no_card
+@short_no_card_skip2:
+
+        lda #$80
+        sta bios_mem_config
+
+        lda #$80
+        sta MEM_CARD_PORT
+        lda #$AA
+        sta $8000
+
+        lda #$01
+        sta Z3
+
+@short_bank_loop:
+        lda Z3
+        cmp #128
+        beq @short_count_done
+
+        ora #$80
+        sta MEM_CARD_PORT
+        lda Z3
+        sta $8000
+
+        lda #$80
+        sta MEM_CARD_PORT
+        lda $8000
+        cmp #$AA
+        bne @short_count_done
+
+        inc Z3
+        bra @short_bank_loop
+
+@short_count_done:
+        lda bios_mem_config
+        ora Z3
+        sta bios_mem_config
+        stz MEM_CARD_PORT
+
+        lda Z3
+        jsr print_dec3
+
+        lda #<msg_banks
+        ldy #>msg_banks
+        jsr print_str
+
+        lda Z3
+        sta Z0
+        stz Z1
+        asl Z0
+        rol Z1
+        asl Z0
+        rol Z1
+        asl Z0
+        rol Z1
+        asl Z0
+        rol Z1
+
+        lda Z0
+        sta Z3
+        lda Z1
+        sta Z4
+        jsr print_dec4
+
+        lda #<msg_kb
+        ldy #>msg_kb
+        jsr print_str
+        jsr new_line
+        plp
+        rts
+
+@short_no_card:
+        stz MEM_CARD_PORT
+        lda #<msg_no_card
+        ldy #>msg_no_card
+        jsr print_str
+        plp
+        rts
+
 ; ---------------------------------------------------------
 ; PROCEDURY POMOCNICZE
 ; ---------------------------------------------------------
