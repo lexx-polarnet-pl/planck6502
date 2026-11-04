@@ -26,7 +26,8 @@ _print_str:
         jmp bios_print_string   ; bios print str (A=low, Y=high)
 
 _getch:
-        jmp bios_get_key      ; BIOS: A = klawisz lub 0, ; A wraca jako wynik funkcji
+        ;jmp bios_get_key      ; BIOS: A = klawisz lub 0, ; A wraca jako wynik funkcji (tylko podstawowe ASCII i duze)
+		jmp bios_get_key_standard      ; BIOS: A = klawisz lub 0, ; A wraca jako wynik funkcji
 
 _fcolor:
         jmp bios_font_color
