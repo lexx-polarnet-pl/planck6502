@@ -68,7 +68,8 @@ RenderAText:
         udiv    r6, r2, r7                   // r6 = quotient = Y / font_height
         mul     r5, r6, r7                   // r5 = quotient * font_height
         subs    r5, r2, r5                   // r5 = remainder
-        mov     r2, r6                       // r2 = quotient (as expected later)    
+        mov     r12, r5                      // preserve remainder while r5 is reused
+        mov     r2, r6                       // r2 = quotient (as expected later)
     #endif
 
 	// [6] get wrap width -> [SP+36]
@@ -90,7 +91,7 @@ RenderAText:
 	    ldr	r5,[r6,#SIO_DIV_REMAINDER_OFFSET] // get remainder of result -> R5, Y coordinate relative to current row
 	    ldr	r2,[r6,#SIO_DIV_QUOTIENT_OFFSET] // get quotient-> R2, index of row
     #else
-        // RP2350 path already set r5 = remainder and r2 = quotient
+        mov     r5, r12                      // restore remainder for font line offset
     #endif
 
 	// pointer to font line -> R3
@@ -366,5 +367,4 @@ RenderAText_InLoop:
 	beq	RenderAText_Last // render 1st half of last character
 	ldr	r2,[sp,#8]	// get base pointer to text data -> R2
 	b	RenderAText_OutLoop // go back to outer loop
-
 
