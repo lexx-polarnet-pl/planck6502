@@ -7100,9 +7100,9 @@
 		(descr "Through hole IDC box header, 2x03, 2.54mm pitch, DIN 41651 / IEC 60603-13, double rows, https://docs.google.com/spreadsheets/d/16SsEcesNF15N3Lb4niX7dcUr-NY5_MFPQhobNuNppn4/edit#gid=0")
 		(tags "Through hole horizontal IDC box header THT 2x03 2.54mm double row")
 		(property "Reference" "J3"
-			(at 5.715 -0.635 270)
+			(at 8.89 2.54 270)
 			(layer "F.SilkS")
-			(uuid "ddabf280-df9c-40c8-99d2-fa8696b620f3")
+			(uuid "24f6d32d-fc8c-4485-8d5a-cc2a7c7fd440")
 			(effects
 				(font
 					(size 1 1)
@@ -7113,7 +7113,7 @@
 		(property "Value" "AVR-ISP-6"
 			(at -2.54 1.905 270)
 			(layer "F.Fab")
-			(uuid "ccbf1fea-956a-4595-997d-30634ba80c50")
+			(uuid "c800611b-830b-4ec8-a75f-dd47967b919b")
 			(effects
 				(font
 					(size 1 1)
@@ -7125,7 +7125,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "1e2da6fd-81e0-467c-b125-d078c2e4c198")
+			(uuid "92c1be1f-5bbe-47a7-9bca-56a37b20de00")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7136,7 +7136,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "254466ca-e774-4823-8b58-0088ef41c6ea")
+			(uuid "8a3b5464-f40d-4191-b651-48e6b3373e86")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13398,7 +13398,7 @@
 		)
 	)
 	(gr_text "MOSI"
-		(at 107.49 91.44 90)
+		(at 106.68 91.44 90)
 		(layer "F.SilkS")
 		(uuid "471c908d-264a-4dd5-92ae-088e3f20664f")
 		(effects
@@ -13453,7 +13453,7 @@
 		)
 	)
 	(gr_text "SCK"
-		(at 113.665 91.435 90)
+		(at 113.284 91.435 90)
 		(layer "F.SilkS")
 		(uuid "2c69d636-358b-410d-95f9-180f1625baba")
 		(effects
