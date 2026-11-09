@@ -22,11 +22,7 @@ static void ansi_process_csi_final(char final_ch);
 // apply SGR parameter (only the ones requested)
 static void ansi_apply_sgr(int param) {
 
-    // those are the colors 
-    /* {BLACK, DARK_GREEN, MED_GREEN, GREEN,
-            DARK_BLUE, BLUE, LIGHT_BLUE, CYAN,
-            RED, DARK_ORANGE, ORANGE, YELLOW, 
-            MAGENTA, PINK, LIGHT_PINK, WHITE} ;*/
+    // ANSI color codes follow the order of the Planck 16-color palette.
     switch(param) {
         case 0:
             // reset attributes
@@ -39,116 +35,113 @@ static void ansi_apply_sgr(int param) {
             break;       
         case 49:
             // reset background to default
-            txt_bg_color = DEFAULT_BG_COLOR;;
+            txt_bg_color = DEFAULT_BG_COLOR;
             break;
             // foreground colors                 
         case 30:
-            txt_fg_color = PC_BLACK;
+            txt_fg_color = PLANCK_BLACK;
             break;
         case 31:
-            txt_fg_color = PC_RED;
+            txt_fg_color = PLANCK_DARK_RED;
             break;
         case 32:
-            txt_fg_color = PC_GREEN;
+            txt_fg_color = PLANCK_RED;
             break;
         case 33:
-            txt_fg_color = PC_YELLOW;
+            txt_fg_color = PLANCK_ORANGE;
             break;
         case 34:
-            txt_fg_color = PC_BLUE;
+            txt_fg_color = PLANCK_DARK_BLUE;
             break;
         case 35:    
-            txt_fg_color = PC_MAGENTA;
+            txt_fg_color = PLANCK_BLUE;
             break;
         case 36:
-            txt_fg_color = PC_CYAN;
+            txt_fg_color = PLANCK_CYAN;
             break;
         case 37:
-            txt_fg_color = PC_WHITE;
+            txt_fg_color = PLANCK_WHITE;
             break;
         case 90: 
-            //txt_fg_color = PC_DARK_GREEN;
+            txt_fg_color = PLANCK_NAVY;
             break;
         case 91:
-            //txt_fg_color = PC_MED_GREEN;
+            txt_fg_color = PLANCK_LIGHT_BLUE;
             break;
         case 92:
-            //txt_fg_color = PC_DARK_BLUE;
+            txt_fg_color = PLANCK_PINK_TINT;
             break;
         case 93:
-            //txt_fg_color = PC_LIGHT_BLUE;
+            txt_fg_color = PLANCK_PINK;
             break;
         case 94:
-            //txt_fg_color = PC_DARK_ORANGE;
+            txt_fg_color = PLANCK_LIGHT_CYAN;
             break;
         case 95:
-            //txt_fg_color = PC_ORANGE;
+            txt_fg_color = PLANCK_SKY_BLUE;
             break;
         case 96:
-            //txt_fg_color = PC_PINK;
+            txt_fg_color = PLANCK_ICE_BLUE;
             break;
         case 97:
-            //txt_fg_color = PC_LIGHT_PINK;
+            txt_fg_color = PLANCK_BRIGHT_WHITE;
             break;            
             // background colors
         case 40:
-            txt_bg_color = PC_BLACK;
+            txt_bg_color = PLANCK_BLACK;
             break;
         case 41:
-            txt_bg_color = PC_RED;
+            txt_bg_color = PLANCK_DARK_RED;
             break;
         case 42:
-            txt_bg_color = PC_GREEN;
+            txt_bg_color = PLANCK_RED;
             break;
         case 43:
-            txt_bg_color = PC_YELLOW;
+            txt_bg_color = PLANCK_ORANGE;
             break;
         case 44:
-            txt_bg_color = PC_BLUE;
+            txt_bg_color = PLANCK_DARK_BLUE;
             break;
         case 45:
-            txt_bg_color = PC_MAGENTA;
+            txt_bg_color = PLANCK_BLUE;
             break;
         case 46:
-            txt_bg_color = PC_CYAN;
+            txt_bg_color = PLANCK_CYAN;
             break;
         case 47:
-            txt_bg_color = PC_WHITE;
+            txt_bg_color = PLANCK_WHITE;
             break;
         case 100:
-            //txt_bg_color = PC_DARK_GREEN;
+            txt_bg_color = PLANCK_NAVY;
             break;
         case 101:
-            //txt_bg_color = PC_MED_GREEN;
+            txt_bg_color = PLANCK_LIGHT_BLUE;
             break;
         case 102:
-            //txt_bg_color = PC_DARK_BLUE;
+            txt_bg_color = PLANCK_PINK_TINT;
             break;
         case 103:
-            //txt_bg_color = PC_LIGHT_BLUE;
+            txt_bg_color = PLANCK_PINK;
             break;
         case 104:
-            //txt_bg_color = PC_DARK_ORANGE;
+            txt_bg_color = PLANCK_LIGHT_CYAN;
             break;
         case 105:
-            //txt_bg_color = PC_ORANGE;
+            txt_bg_color = PLANCK_SKY_BLUE;
             break;
         case 106:
-            //txt_bg_color = PC_PINK;
+            txt_bg_color = PLANCK_ICE_BLUE;
             break;
         case 107:
-            //txt_bg_color = PC_LIGHT_PINK;
+            txt_bg_color = PLANCK_BRIGHT_WHITE;
             break;
     }
-
+    PrintSetCol(PC_COLOR(txt_bg_color, txt_fg_color));
     // PLACEHOLDER: if you need to propagate attribute change to hardware, do it here
 }
 
 
 static void ansi_process_csi_final(char final_ch) {
-    //cursor_disable();
-    //extern int txt_cursor_x;
-    //extern int txt_cursor_y;
 
     // if any number still being built, commit it
     if (csi_building) {
@@ -162,10 +155,6 @@ static void ansi_process_csi_final(char final_ch) {
             int p = (csi_param_count >= 1) ? csi_params[0] : 0;
             if (p == 2) {
                 PrintClear();
-                //clear_screen(txt_bg_color);
-                //memset(txt_chars, 0, TXT_SCREEN_SIZE);
-                //memset(txt_colors, txt_bg_color, TXT_SCREEN_SIZE);
-                // PLACEHOLDER: full-screen refresh after clear
             }
         } break;
 
@@ -176,10 +165,6 @@ static void ansi_process_csi_final(char final_ch) {
             if (csi_param_count >= 2 && csi_params[1] > 0) c = csi_params[1];
             // convert to 0-based indices used by your code
             PrintSetPos(c - 1, r - 1);
-            //txt_cursor_y = r - 1;
-            //txt_cursor_x = c - 1;
-            //ansi_clamp_cursor(&txt_cursor_x, &txt_cursor_y);
-            // PLACEHOLDER: move hardware cursor if necessary*/
         } break;
 
         case 'h': {
@@ -188,7 +173,7 @@ static void ansi_process_csi_final(char final_ch) {
                 int p = (csi_param_count >= 1) ? csi_params[0] : 0;
                 if (p == 25) {
                     terminal_cursor_enable();
-                    //cursorDisabled = false;
+                    terminal_cursor_disabled = false;
                 }
             }
         } break;
@@ -199,7 +184,7 @@ static void ansi_process_csi_final(char final_ch) {
                 int p = (csi_param_count >= 1) ? csi_params[0] : 0;
                 if (p == 25) {
                     terminal_cursor_disable();
-                    //cursorDisabled = true;
+                    terminal_cursor_disabled = true;
                 }
             }
         } break;
@@ -225,7 +210,6 @@ static void ansi_process_csi_final(char final_ch) {
     csi_cur_val = 0;
     csi_building = false;
     csi_private = false;
-    //cursor_enable();    
 }
 
 bool ansi_terminal_process_char(char ch) {

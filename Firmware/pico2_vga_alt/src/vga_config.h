@@ -110,3 +110,5 @@
 #define VGA_DMA_NUM	(LAYERS*2)	// number of used DMA channels
 #define VGA_DMA_FIRST	VGA_DMA		// first used DMA
 #define VGA_DMA_LAST	(VGA_DMA_FIRST+VGA_DMA_NUM-1) // last used DMA
+
+#define USE_SPRITES 1  // 1 = włącz duszki, 0 = wyłącz
