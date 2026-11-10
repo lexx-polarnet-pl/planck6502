@@ -10,6 +10,7 @@ This is an entirely new build, not based on any existing board from the original
 
 | Version | Status | Changes |
 | :---: | :---: | :--- |
+| **1.2** | Work in progress | RDY latch improvements to support multiple cards using the RDY signal on the bus (open-collector configuration) |
 | **1.1** | Work in progress | RDY latch corrected, CS signal routed to ATmega |
 | **1.0** | Not working | Initial design |
 
