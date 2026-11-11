@@ -1,5 +1,7 @@
 ## Planck 6502 Joystick Interface
 
+![Joystick Board prototype 3D render](pictures/joystick_prototype_render.jpg)
+
 This is the dual joystick interface card for the Planck 6502 computer.
 
 This is an entirely new build, not based on any existing board from the original Planck project.
