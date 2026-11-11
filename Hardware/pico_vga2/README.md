@@ -1,4 +1,6 @@
-## Planck 6502 Pico 2 VGA Board
+## Planck 6502 Pico 2 VGA Board 
+
+![Pico 2 VGA Board prototype 3D render](pictures/pico2vga_proto_render.jpg)
 
 This is a VGA board for the Planck 6502 computer, based on the Raspberry Pi Pico 2. 
 
