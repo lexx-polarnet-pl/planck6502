@@ -32,7 +32,7 @@ This is an entirely new build, not based on any existing board from the original
 | **Signal** | `DIP_2` | `DIP_1` | `FIRE 2` | `FIRE 1` | `RIGHT` | `LEFT` | `DOWN` | `UP` |
 | **Source** | SW2 | SW1 | Pin 9 | Pin 6 | Pin 4 | Pin 3 | Pin 2 | Pin 1 |
 
-### `PORT_JOY1` (``CARD_BASE_ADDR + $01`)
+### `PORT_JOY1` (`CARD_BASE_ADDR + $01`)
 | Bit | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Signal** | `DIP_4` | `DIP_3` | `FIRE 2` | `FIRE 1` | `RIGHT` | `LEFT` | `DOWN` | `UP` |
