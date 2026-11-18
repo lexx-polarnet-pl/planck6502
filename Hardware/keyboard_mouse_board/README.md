@@ -1,6 +1,6 @@
 ## Planck 6502 Keyboard and Mouse Interface
 
-![Keyboard and mouse interface with add-on 1.0 assembled](pictures/keyboard_mouse_board_1.0.jpg)
+![Keyboard and mouse interface v1.1 assembled](pictures/keyboard_mouse_board_1.1.jpg)
 
 This is the keyboard and mouse interface card for the Planck 6502 computer.
 
@@ -11,10 +11,10 @@ This is an entirely new build, not based on any existing board from the original
 | Version | Status | Changes |
 | :---: | :---: | :--- |
 | **1.2** | Work in progress | RDY latch improvements to support multiple cards using the RDY signal on the bus (open-collector configuration) |
-| **1.1** | Work in progress | RDY latch corrected, CS signal routed to ATmega |
+| **1.1** | Tested and working (with remarks)  | RDY latch corrected, CS signal routed to ATmega |
 | **1.0** | Not working | Initial design |
 
-**Version 1.0 doesn't work correctly, version 1.1 was not tested yet**
+**Version 1.1 has been tested and is working, but no other devices connected to the CPU bus can use the RDY signal.**
 
 This card was designed to act as an abstraction layer between a keyboard/mouse and the W65C02 CPU. It uses an ATmega328P microcontroller to handle all the signal translation. From the CPU's perspective, the entire card is accessible within a 16-byte memory block, and all communication is handled simply by reading from or writing to memory.
 
