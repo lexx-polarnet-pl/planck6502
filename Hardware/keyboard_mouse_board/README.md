@@ -16,6 +16,12 @@ This is an entirely new build, not based on any existing board from the original
 
 **Version 1.1 has been tested and is working, but no other devices connected to the CPU bus can use the RDY signal.**
 
+> [!WARNING]
+> **Hardware Risk in Version 1.1:**
+> Aside from causing bus conflicts when other expansion cards use the `RDY` signal, **Version 1.1 can permanently damage the W65C02 CPU if the `WAI` (Wait for Interrupt) instruction is executed.** 
+>
+> On the W65C02, the `RDY` pin is bidirectional—the CPU actively pulls `RDY` low during a `WAI` instruction. Because the v1.1 `RDY` latch uses a standard push-pull output rather than an open-collector/open-drain configuration, it actively drives the `RDY` line high when idle, creating a direct short circuit against the CPU's internal driver. **Do not execute `WAI` instructions on systems equipped with the v1.1 board** (use v1.2 or modify the output stage with an open-collector buffer/diode).
+
 This card was designed to act as an abstraction layer between a keyboard/mouse and the W65C02 CPU. It uses an ATmega328P microcontroller to handle all the signal translation. From the CPU's perspective, the entire card is accessible within a 16-byte memory block, and all communication is handled simply by reading from or writing to memory.
 
 Because the ATmega may be too slow to respond directly to the CPU (which is the case when running the Planck at 12 MHz against the ATmega at 8 MHz), the card includes 74-series logic circuitry. This logic pulls the RDY line low immediately when the SLOT_SEL signal is detected, effectively pausing the CPU. Once the ATmega finishes processing the request and the data is ready, it generates a strobe signal (RDY_STROBE) to release the latch, allowing the CPU to resume execution. Note that due to this design, the card may not work with an original 6502 CPU, which handles the RDY line differently. However, since the Planck uses the W65C02, it works reliably.
